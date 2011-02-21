@@ -5,8 +5,6 @@ from helpers import set_section
 import logging as log
 import models as m
 import controllers as c
-from config.routes import get_dispatcher
-routes_dispatcher = get_dispatcher()
 
 
 if __name__ == "__main__":

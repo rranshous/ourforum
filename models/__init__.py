@@ -62,6 +62,17 @@ class Node(BaseEntity):
     # nodes can relate to eachother many to many
     relatives = ManyToMany('Node', tablename='relationships')
 
+    @classmethod
+    def get_json_obj(cls,node_id):
+        """ returns either the json obj for the node
+            or None """
+        node = cls.get(node_id)
+        if node:
+            return loads(node.data)
+        return None
+
+    def json_obj(self):
+        return loads(self.data or {})
 
 class JsonNode(Node):
     """
