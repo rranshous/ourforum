@@ -25,19 +25,21 @@ class Root(BaseController):
         # recursion, recursion, recursion
         def _lvl(nodes,root_nodes,current_depth,depth):
             lvl = []
+            cherrypy.log( 'nodes: %s' % [x.id for x in nodes])
             for node in nodes:
                 o = node.json_obj()
-                print 'o: %s' % o
+                cherrypy.log('o: %s' % o)
                 lvl.append(o)
                 if current_depth < depth:
                     relatives = [x for x in node.relatives
                                        if x not in root_nodes]
-                    o['_relatives'] = _lvl(relatives,root_nodes,
-                                           current_depth+1,depth)
+                    print 'relatives: %s' % relatives
+                    if relatives:
+                        o['_relatives'] = _lvl(relatives,root_nodes,
+                                               current_depth+1,depth)
             return lvl
 
         nodes = [m.Node.get(n) for n in node_ids]
-        print 'nodes: %s' % nodes
         to_return = _lvl(nodes,nodes,1,depth)
 
         return to_return

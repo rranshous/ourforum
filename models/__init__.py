@@ -62,17 +62,6 @@ class Node(BaseEntity):
     # nodes can relate to eachother many to many
     relatives = ManyToMany('Node', tablename='relationships')
 
-    @classmethod
-    def get_json_obj(cls,node_id):
-        """ returns either the json obj for the node
-            or None """
-        node = cls.get(node_id)
-        if node:
-            return loads(node.data)
-        return None
-
-    def json_obj(self):
-        return loads(self.data or {})
 
 class JsonNode(Node):
     """
@@ -176,6 +165,18 @@ class JsonNode(Node):
     def _update_json(self,data):
         """ update the data attribute w/ json for passed data """
         self.data = dumps(data)
+
+    @staticmethod
+    def _json_obj(node):
+        if node.data:
+            o = loads(node.data)
+        else:
+            o = {}
+        o['id'] = node.id
+        return o
+
+    def json_obj(self):
+        return self._json_obj(self)
 
 class FeedEntry(JsonNode):
     """
