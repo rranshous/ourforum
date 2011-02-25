@@ -7,6 +7,10 @@ class Root(BaseController):
     """ sits @ The root of the app """
 
     @cherrypy.expose
+    def index(self):
+        return render('/node.html');
+
+    @cherrypy.expose
     def get_nodes_data(self,node_ids,depth=1):
         """ return back the json for the node,
             and it's relative's possibly """
@@ -49,26 +53,5 @@ class Root(BaseController):
         return dumps(self.get_nodes_data(ids,depth=depth))
 
     @cherrypy.expose
-    def node(self,ids):
-        return dumps(self.get_nodes_data(ids)[0])
-
-    @cherrypy.expose
-    def public(self):
-        return self.index()
-
-    @cherrypy.expose
-    def index(self):
-        """ login if not authed else the home page """
-        return render('/index.html')
-
-    @cherrypy.expose
-    def logout(self):
-        """ clear the sesion to logout the user """
-        cherrypy.lib.sessions.expire()
-        redirect('/')
-
-    @cherrypy.expose
-    def contact(self):
-        return render('/contact.html')
-    contact_methods = contact
-    contact_me = contact
+    def node(self,ids,depth=1):
+        return dumps(self.get_nodes_data(ids,depth)[0])

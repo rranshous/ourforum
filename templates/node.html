@@ -1,0 +1,196 @@
+
+
+## we are trying to put down a simple view of the node, it's data
+## and the data around the node.
+## if the user clicks on a related node we shift to focusing
+## on that node
+
+## to keep it simple for now we are going to put
+## a box in the middle of the page which is the focus'd
+## the related nodes around it
+
+## we are going to setup templates for each of the node types
+## each of the templates is going to be rendered into a cell
+## who's size is unknown
+
+<html>
+<head>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/ext-core/3.1.0/ext-core-debug.js"></script>
+
+    <script>
+
+    // workers to build up the functions
+    // which will act as renderers
+    var node_renderers = {};
+
+    node_renderers['DEFAULT'] = function(v) { return v; };
+
+    var render = function(data) {
+        // find our renderer
+        var r = node_renderers[data['type']];
+        if(Ext.isEmpty(r))
+            r = node_renderers['DEFAULT'];
+        return r(data);
+    }
+
+    var T = function(type,renderers) {
+        node_renderers[type] = function(data) {
+            var pieces = [];
+            for(var k in data) {  
+                var result = data[k];
+                var r;
+                Ext.each(renderers,function(renderer) {
+                    // we are assuming only one hit
+                    r = renderer(k,data[k]);
+                    if(!Ext.isEmpty(r) && r) {
+                        pieces.push(r);
+                        return false;
+                    }
+                },this);
+            }
+            var p, to_return = '';
+            while(p = pieces.pop()) {
+                to_return += ''+p+'<br/>';
+            }
+            return to_return;
+        };
+    };
+
+    var get_renderer = function(name,modifiers) {
+        return (function(k,v) {
+            if(name==k) {
+                Ext.each(modifiers,function(m) {
+                    v = m(v);
+                },this);
+                return v;
+            }
+            return false;
+        });
+    };
+
+    var F = function() {
+        arguments = Array.prototype.slice.call(arguments);
+        var name = arguments[0];
+        var modifiers = arguments.splice(1);
+        return get_renderer(name,modifiers);
+    };
+
+    // possible modifiers
+    var as_link = function(v) {
+        return '<a href=="'+v+'">'+v+'</a>';
+    };
+    var bold = function(v) {
+        return '<b>'+v+'</b>';
+    };
+    var image = function(size) {
+        return (function(v) {
+            var r = '<img src="'+v+'" ';
+            switch(size) {
+                case 'small':
+                    r += 'width="50px"';
+                    break;
+                default:
+                    r += 'width="100"';
+            }
+            r += '/>';
+            return r;
+        })
+    };
+
+    // our data
+    T('FeedEntry',[
+        F('source',as_link),
+        F('title',bold),
+        F('body'),
+        F('timestamp') 
+    ]);
+
+    T('Comment',[
+        F('title',bold),
+        F('comment')
+    ]);
+
+    T('User',[
+        F('handle',bold),
+        F('avatar_url',image('small'))
+    ]);
+
+    T('Author',[
+        F('handle',bold),
+        F('avatar_url',image('small'))
+    ]);
+
+
+    // the main elements on the page we touch
+    var MAIN_EL = function() {
+        return Ext.get('main_el');
+    };
+
+    var RELATIVE_CONTAINER = function() {
+        return Ext.get('relative_container');
+    }
+
+
+    // update a node
+    var update_node = function(el,data) {
+        el.update(render(data));
+    };
+
+
+    // clear out the relative nodes
+    var clear_relatives = function() {
+        RELATIVE_CONTAINER().select('.relative_node').each(function(el) {
+            el.remove();
+        },this);
+    }
+
+    // add relative nodes
+    var add_relative = function(data) {
+        var el = Ext.DomHelper.append(RELATIVE_CONTAINER(),{
+            tag: 'div',
+            cls: 'relative_node'
+        },true);
+        update_node(el,data);
+    };
+
+
+    // function to update our view
+    var activate = function(id) {
+        // fetch the nodes data
+        var depth = 2;
+        Ext.Ajax.request({
+            disableCaching: false, // server can't handle extra params
+            url:'/node/'+id+'/'+depth+'/',
+            success: function(response) {
+                var data = Ext.decode(response.responseText);
+
+                // the root of data is going to be the node's data
+                // use that data to update our main node div
+                update_node(MAIN_EL(),data);
+
+                // now update the relatives
+                // first clear out the relatives we have showing now
+                clear_relatives();
+
+                // now that we have a clean canvas, render in
+                // our relatives
+                if(!Ext.isEmpty(data._relatives)) {
+                    Ext.each(data._relatives,add_relative);
+                };
+            }
+        });
+    };
+
+    </script>
+</head>
+
+
+<body>
+    <div id="main_el">
+    </div>
+
+    <div id="relative_container">
+    </div>
+</body>
+</html>

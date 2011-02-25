@@ -173,9 +173,14 @@ class JsonNode(Node):
         else:
             o = {}
         o['id'] = node.id
+        o['type'] = node.__class__.__name__
         return o
 
     def json_obj(self):
+        """
+        returns the python dict
+        for the json obj
+        """
         return self._json_obj(self)
 
 class FeedEntry(JsonNode):
@@ -183,6 +188,7 @@ class FeedEntry(JsonNode):
     a node based off an RSS feed entry
     """
 
+    source = JsonAttribute('')
     title = JsonAttribute('')
     body = JsonAttribute('')
     timestamp = JsonAttribute('')
@@ -215,4 +221,8 @@ class User(JsonNode):
     def create_password_hash(cls,p):
         """ returns back hashed version of password """
         return sha1(p).hexdigest()
+
+class Author(User):
+    """ User who author'd a node """
+    pass
 
