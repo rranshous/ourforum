@@ -148,10 +148,22 @@
         return Ext.get('relative_container');
     }
 
+    var append_focus_button = function(el,data) {
+        var b = Ext.DomHelper.append(el,{ tag:'a', 
+                                          href:'#',
+                                          html:'focus',
+                                          cls:'focus'},
+                                     true);
+        b.on('click',function() { activate(data.id); });
+    };
 
     // update a node
     var update_node = function(el,data) {
         el.update(render(data));
+        if(el != MAIN_EL()) {
+            append_focus_button(el,data);
+        }
+
     };
 
 
@@ -241,8 +253,14 @@
     };
 
     var last_data = {};
+    var last_ids = [];
+
+    var back = function() {
+        activate(last_ids.pop());
+    };
 
     var _handle_activate_response = function(data) {
+        last_ids.push(last_data.id);
         last_data = data;
 
         // the root of data is going to be the node's data
@@ -301,6 +319,7 @@
 
 
     <style>
+        body { padding: 0; margin: 0; }
         #main_el {
             padding: 15px;
         }
@@ -311,6 +330,7 @@
             border: 4px solid #cccccc;
             padding: 10px;
             margin: 0 0 10px 0;
+            position: relative;
         }
         button {
             border: 1px solid #cccccc;
@@ -319,11 +339,23 @@
         button.enabled {
             border: 1px solid black;
         }
+        .focus {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+        #navigation_container {
+            padding: 0;
+            margin: 0 0 0 0;
+        }
     </style>
 </head>
 
 
 <body>
+    <div id="navigation_container">
+        <button onClick="back(); return false;">BACK</button>
+    </div>
     <div id="main_el">
     </div>
     <hr/>
