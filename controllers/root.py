@@ -49,9 +49,16 @@ class Root(BaseController):
         return to_return
 
     @cherrypy.expose
-    def nodes(self,ids,depth=1):
-        return dumps(self.get_nodes_data(ids,depth=depth))
+    def nodes(self,*args,**kwargs):
+        return dumps(self.get_nodes_data(*args,**kwargs))
 
     @cherrypy.expose
-    def node(self,ids,depth=1):
-        return dumps(self.get_nodes_data(ids,depth)[0])
+    def node(self,*args,**kwargs):
+        return dumps(self.get_nodes_data(*args,**kwargs)[0])
+
+    @cherrypy.expose
+    def recent_nodes(self,count=10):
+        ids =[i[0] for i in m.session.query(m.Node.id).limit(count).all()]
+        ids = map(str,ids)
+        return dumps(self.get_nodes_data(','.join(ids)))
+

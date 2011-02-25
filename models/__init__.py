@@ -136,6 +136,8 @@ class JsonNode(Node):
             data = self._get_json_data()
             if attr in data:
                 return data.get(attr)
+            else:
+                return value.default
 
         return value
 
@@ -225,4 +227,5 @@ class User(JsonNode):
 class Author(User):
     """ User who author'd a node """
     pass
+
 
