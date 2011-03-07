@@ -18,6 +18,9 @@ class Root(BaseController):
         to_return = {}
 
         # we can pass multiple nodes for the root lvl
+        if not node_ids:
+            return dumps({})
+
         node_ids = map(int,node_ids.split(','))
 
         print 'node_ids: %s' % node_ids
