@@ -7,6 +7,10 @@ import os
 import random
 from json import dumps, loads
 
+
+TYPE_LOOKUP = {'unicode':'str',
+               'None':'str'}
+
 ## helper functions ##
 def add_tag_by_name(self,name):
     tag = Tag.get_by(name=name)
@@ -120,6 +124,25 @@ class JsonNode(Node):
             return True
 
         return False
+
+    @classmethod
+    def _json_attribute_dict(cls):
+        """ returns a dict w/ json attributes
+            and the value types """
+
+        global TYPE_LOOKUP
+
+        fields = {}
+
+        for attr in dir(cls):
+            v = getattr(cls,attr)
+            if isinstance(v,JsonAttribute):
+                t = type(v.default).__name__
+                if t in TYPE_LOOKUP:
+                    t = TYPE_LOOKUP[t]
+                fields[attr] = t
+
+        return fields
 
     def __getattribute__(self,attr,**kwargs):
         """

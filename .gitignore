@@ -1,3 +1,4 @@
 *.swp
+seen.json
 *.pyc
 /dbs/
