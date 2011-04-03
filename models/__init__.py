@@ -89,6 +89,12 @@ class JsonNode(Node):
         # call our super
         super(JsonNode,self).__init__(*args,**kwargs)
 
+        # get our data, this will be blank
+        # but the data obj will set the value
+        # against the entities json data
+        # when u set the value in the data obj
+        data = self._get_json_data()
+
         # update our data dict w/ the base
         # attributes
         for k,v in vars(self).iteritems():

@@ -7,7 +7,7 @@ from nodes import Node
 class Root(BaseController):
     """ sits @ The root of the app """
 
-    nodes = Node()
+    node = Node()
 
     @cherrypy.expose
     def index(self):

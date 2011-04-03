@@ -50,12 +50,12 @@ class Node(BaseController):
         return to_return
 
     @cherrypy.expose
-    def list(self,*args,**kwargs):
-        return dumps(self.get_data(*args,**kwargs))
+    def list(self,node_ids,depth):
+        return dumps(self.get_data(node_ids,depth))
 
     @cherrypy.expose
-    def get(self,*args,**kwargs):
-        return dumps(self.get_data(*args,**kwargs)[0])
+    def get(self,node_id,depth):
+        return dumps(self.get_data(node_id,depth)[0])
 
     @cherrypy.expose
     def update(self,**kwargs):
@@ -67,7 +67,7 @@ class Node(BaseController):
             error(404)
 
         # update the node from the kwargs
-        updated = { }
+        updated = { };
         for k,v in kwargs:
             if k == 'id': continue
             if hasattr(node,k):
@@ -82,6 +82,9 @@ class Node(BaseController):
 
     @cherrypy.expose
     def create(self,**kwargs):
+        # TODO: enable the association of the new
+        # node to an existing node
+
         # create a new node, get the node based on the type
         node_class = getattr(m,kwargs.get('type'))
         if not node_class:
@@ -96,18 +99,30 @@ class Node(BaseController):
         m.session.commit()
 
         # return it's data
-        return dumps(self.get_data([node.id]))
+        return dumps(self.get_data([node.id])[0])
 
 
     ## helper methods !
 
     @cherrypy.expose
-    def recent_nodes(self,count=10):
-        ids =[i[0] for i in m.session.query(m.Node.id).limit(count).all()]
+    def recent(self,count=10):
+        # query for the most recent nodes
+        query = m.session.query(m.Node.id).order_by(m.Node.id.desc())
+
+        # limit to our count
+        query = query.limit(count)
+
+        # pull the id's off the returned tuple
+        ids =[i[0] for i in query.all()]
+
         return dumps(self.get_data(ids))
 
     @cherrypy.expose
     def describe(self,node_type=None,id=None):
+        # return back a description of the nodes
+        # type's fields
+
+        # if they passed an id, than get it's type
         if id:
             node = m.Node.get(id)
             if not node:
@@ -120,6 +135,7 @@ class Node(BaseController):
             if not node_class:
                 error(404)
 
+        # get the fields from the node type
         fields = node_class._json_attribute_dict()
 
         return dumps(fields)

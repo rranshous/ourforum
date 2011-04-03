@@ -279,6 +279,8 @@
         last_ids.push(last_data.id);
         last_data = data;
 
+        console.log({data:data,last_data:last_data});
+
         // the root of data is going to be the node's data
         // use that data to update our main node div
         update_node(MAIN_EL(),data);
@@ -307,14 +309,14 @@
     var load_front_page = function(count) {
         var front_page_count = count || 10;
         Ext.Ajax.request({
-            disableCaching: false,
-            url:'/nodes/recent_nodes/'+front_page_count,
+            url:'/node/recent/'+front_page_count,
             success: handle_activate_multi_response
         });
     }
 
     // function to update our view
     var activate = function(id) {
+        console.log('activating '+id)
         if(Ext.isEmpty(id)) {
             load_front_page();
             return;
@@ -323,13 +325,118 @@
         // fetch the nodes data
         var depth = 2;
         Ext.Ajax.request({
-            disableCaching: false, // server can't handle extra params
             url:'/node/get/'+id+'/'+depth+'/',
             success: handle_activate_response
         });
     };
 
+    // function which will return back the fields
+    // a node has
+    var get_node_fields = function(node_type,callback,scope) {
+        Ext.Ajax.request({
+            scope:this,
+            url:'/node/describe/'+node_type,
+            success: function(response) {
+                data = Ext.decode(response.responseText);
+                callback.apply(scope,[data]);
+            }
+        });
+    };
 
+    // submit a node update / create
+    var submit_node_update = function(form) {
+        // if there is an id in the form than
+        // it's an update not new
+        var type = form.child('input[name=id]')?'update':'create';
+        console.log({form:form,type:type});
+        Ext.Ajax.request({
+            scope:this,
+            form:form,
+            url:'/node/'+type,
+            success: function(response) {
+                // data is the node's new data
+                var data = Ext.decode(response.responseText);
+
+                // now that we have submitted we
+                // can clear the form
+                form.remove();
+            }
+        });
+    };
+
+    // show's the edit / new obj form on the page
+    var FIELD_TEMPLATE = {
+        'str': new Ext.Template('<input type="text"',
+                                'name="{name}"',
+                                'value="{value}"'),
+        'hidden': new Ext.Template('<input type="hidden"',
+                                   'name="{name}"',
+                                   'value="{value}"')
+    };
+
+    var show_node_edit = function(node_type,fields,data) {
+        // get the container
+        var container = Ext.get('form_container');
+
+        console.log({'node_type':node_type,'fields':fields,'data':data});
+
+        // create our form
+        var name, type, form_html = [];
+        for(name in fields) {
+            type = fields[name];
+            console.log({'type':type,'name':name});
+            form_html.push(FIELD_TEMPLATE[type].apply({'name':name,
+                                                       'value':data[name]}));
+        }
+
+        // if we were passed an id render that in also
+        if(!Ext.isEmpty(data['id'])) {
+            form_html.push(FIELD_TEMPLATE['hidden'].apply({'name':'id',
+                                                          'value':data['id']}));
+        }
+
+        // add in the nodes type
+        form_html.push(FIELD_TEMPLATE['hidden'].apply({'name':'type',
+                                                       'value':node_type}));
+
+        // render in our form
+        var form = Ext.DomHelper.append(container,{
+            tag:'form',
+            html:form_html.join('\n')
+        },true);
+
+        // add in the submit button
+        var button = Ext.DomHelper.append(form,{
+            tag:'button',
+            html:'Submit'
+        },true);
+
+        // add in our click handler for the button
+        button.on('click',function(e) {
+            // stop default button action (aka submit)
+            e.preventDefault();
+
+            // submit the form
+            submit_node_update(form);
+        },this);
+    };
+    
+    // we want to be able to add a new comment
+    // to an existing node
+    var add_comment = function(relative_id) {
+        // first get the fields that a comment
+        // can have
+        get_node_fields('Comment',function(fields) {
+            // now that we know the fields,
+            // put up a form w/ those fields
+            show_node_edit('Comment',fields,{});
+        },this);
+    };
+
+
+    // disable AJAX requests adding a random
+    // arg for caching
+    Ext.onReady(function() { Ext.Ajax.disableCaching = false; });
     Ext.onReady(load_front_page);
     </script>
 
@@ -369,10 +476,15 @@
 
 
 <body>
+    <div id="form_container">
+    </div>
     <div id="navigation_container">
         <button onClick="back(); return false;">BACK</button>
     </div>
     <div id="main_el">
+    </div>
+    <hr/>
+    <div id="node_action_container">
     </div>
     <hr/>
     <div id="filter_button_container">
