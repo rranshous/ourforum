@@ -3,6 +3,8 @@ import cherrypy
 from cherrypy import HTTPRedirect, HTTPError
 from decorator import decorator
 
+
+
 def error(*args):
     raise HTTPError(*args)
 
@@ -37,3 +39,10 @@ def is_active_section(s):
 
 def is_active_subsection(s):
     return cherrypy.request.subsection_name == s
+
+def iterable(o):
+    try:
+        i = iter(o)
+        return True
+    except TypeError:
+        return False

@@ -268,6 +268,7 @@
         },this);
     };
 
+    var current_data = {};
     var last_data = {};
     var last_ids = [];
 
@@ -278,6 +279,7 @@
     var _handle_activate_response = function(data) {
         last_ids.push(last_data.id);
         last_data = data;
+        current_data = data;
 
         console.log({data:data,last_data:last_data});
 
@@ -366,9 +368,14 @@
 
     // show's the edit / new obj form on the page
     var FIELD_TEMPLATE = {
-        'str': new Ext.Template('<input type="text"',
+        'str': new Ext.Template('<label>',
+                                '<span class="name">',
+                                '{name}:',
+                                '</span> ',
+                                '<input type="text"',
                                 'name="{name}"',
-                                'value="{value}"'),
+                                'value="{value}"',
+                                '</label><br/>'),
         'hidden': new Ext.Template('<input type="hidden"',
                                    'name="{name}"',
                                    'value="{value}"')
@@ -399,6 +406,13 @@
         form_html.push(FIELD_TEMPLATE['hidden'].apply({'name':'type',
                                                        'value':node_type}));
 
+        // add any relatives
+        if(!Ext.isEmpty(data['_add_relative'])) {
+            form_html.push(FIELD_TEMPLATE['hidden'].apply({
+                                               'name':'_add_relative',
+                                               'value':data['_add_relative']}));
+        }
+
         // render in our form
         var form = Ext.DomHelper.append(container,{
             tag:'form',
@@ -424,12 +438,11 @@
     // we want to be able to add a new comment
     // to an existing node
     var add_comment = function(relative_id) {
-        // first get the fields that a comment
-        // can have
+        // first get the fields that a comment can have
         get_node_fields('Comment',function(fields) {
             // now that we know the fields,
             // put up a form w/ those fields
-            show_node_edit('Comment',fields,{});
+            show_node_edit('Comment',fields,{'_add_relative':relative_id});
         },this);
     };
 
@@ -471,20 +484,30 @@
             padding: 0;
             margin: 0 0 0 0;
         }
+        form {
+            padding: 20px;
+        }
+        form label span {
+            width: 100;
+            float: left;
+        }
     </style>
 </head>
 
 
 <body>
-    <div id="form_container">
-    </div>
     <div id="navigation_container">
         <button onClick="back(); return false;">BACK</button>
+    </div>
+    <hr/>
+    <div id="form_container">
     </div>
     <div id="main_el">
     </div>
     <hr/>
     <div id="node_action_container">
+        <button onClick="add_comment(current_data.id); return false;">
+            Add Comment</button>
     </div>
     <hr/>
     <div id="filter_button_container">

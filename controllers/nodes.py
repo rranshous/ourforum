@@ -13,6 +13,9 @@ class Node(BaseController):
 
         to_return = {}
 
+        # make sure depth is an int
+        depth = int(depth)
+
         # we can pass multiple nodes for the root lvl
         if not node_ids:
             return dumps({})
@@ -22,6 +25,7 @@ class Node(BaseController):
             node_ids = map(int,node_ids.split(','))
 
         print 'node_ids: %s' % node_ids
+        print 'depth: %s' % depth
 
         # for every lvl of depth we want
         # to return all the relating nodes
@@ -57,6 +61,38 @@ class Node(BaseController):
     def get(self,node_id,depth):
         return dumps(self.get_data(node_id,depth)[0])
 
+    def _modify_relative(self,node,relative,m_add=False,m_remove=False):
+        print 'modifying relative: %s' % relative.id
+        if relative:
+            if m_add:
+                print 'adding'
+                node.relatives.append(relative)
+                relative.relatives.append(node) # doing both sides
+            if m_remove:
+                try:
+                    print 'removing'
+                    node.relatives.remove(relative)
+                    relative.relatives.remove(node)
+                except:
+                    # guess they aren't related
+                    pass
+
+    def _modify_relatives(self,node,relative_ids,m_add=False,m_remove=False):
+        print 'modifying relatives'
+        if not m_add and not m_remove:
+            return
+
+        if iterable(relative_ids):
+            print 'iterable'
+            for node_id in relative_ids:
+                relative = m.Node.get(node_id)
+                self._modify_relative(node,relative,m_add,m_remove)
+        else:
+            print 'not iterable'
+            relative = m.Node.get(relatives_ids)
+            self._modify_relative(node,relative.m_add,m_remove)
+
+
     @cherrypy.expose
     def update(self,**kwargs):
         # we are going to update an existing node
@@ -74,6 +110,15 @@ class Node(BaseController):
                 setattr(node,k,v)
                 updated[k] = node.get(v)
 
+        # see if there are any more tasks
+        if '_add_relative' in kwargs:
+            to_add = kwargs.get('_add_relative')
+            self._modify_relatives(node,to_add,m_add=True)
+
+        if '_remove_relative' in kwargs:
+            to_remove = kwargs.get('_remove_relative')
+            self._modify_relatives(node,to_remove,m_remove=True)
+
         # save our changes
         m.session.commit()
 
@@ -82,9 +127,6 @@ class Node(BaseController):
 
     @cherrypy.expose
     def create(self,**kwargs):
-        # TODO: enable the association of the new
-        # node to an existing node
-
         # create a new node, get the node based on the type
         node_class = getattr(m,kwargs.get('type'))
         if not node_class:
@@ -97,6 +139,12 @@ class Node(BaseController):
         # create our node
         node = node_class(**kwargs)
         m.session.commit()
+
+        # see if it has any relatives
+        if '_add_relative' in kwargs:
+            to_add = kwargs.get('_add_relative')
+            print '****** adding relative: %s' % (to_add)
+            self._modify_relatives(node,to_add,m_add=True)
 
         # return it's data
         return dumps(self.get_data([node.id])[0])
