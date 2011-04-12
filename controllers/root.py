@@ -10,6 +10,6 @@ class Root(BaseController):
     node = Node()
 
     @cherrypy.expose
-    def index(self):
+    def default(self,*args,**kwargs):
         return render('/node.html');
 

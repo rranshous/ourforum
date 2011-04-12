@@ -112,6 +112,7 @@ class Node(BaseController):
 
         # see if there are any more tasks
         if '_add_relative' in kwargs:
+            cherrypy.log('adding relative: %s' % kwargs.get('_add_relative'))
             to_add = kwargs.get('_add_relative')
             self._modify_relatives(node,to_add,m_add=True)
 
@@ -138,13 +139,15 @@ class Node(BaseController):
 
         # create our node
         node = node_class(**kwargs)
-        m.session.commit()
 
         # see if it has any relatives
         if '_add_relative' in kwargs:
+            cherrypy.log('adding relative: %s' % kwargs.get('_add_relative'))
             to_add = kwargs.get('_add_relative')
-            print '****** adding relative: %s' % (to_add)
             self._modify_relatives(node,to_add,m_add=True)
+
+        # commit that shit!
+        m.session.commit()
 
         # return it's data
         return dumps(self.get_data([node.id])[0])

@@ -16,7 +16,8 @@
 <html>
 <head>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/ext-core/3.1.0/ext-core-debug.js"></script>
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/ext-core/3.1.0/ext-core-debug.js"></script> -->
+    <script src="/js/ext-core-debug.js"/></script>
 
     <script>
 
@@ -201,7 +202,7 @@
             relative_filter_items.push(this.type);
             this.addClass('enabled');
         }
-        activate(last_data.id);
+        refresh_page_data();
     };
 
     var update_filter_buttons = function() {
@@ -306,7 +307,7 @@
         var data = Ext.decode(response.responseText);
         data = {_relatives:data};
         _handle_activate_response(data);
-    }
+    };
 
     var load_front_page = function(count) {
         var front_page_count = count || 10;
@@ -314,7 +315,49 @@
             url:'/node/recent/'+front_page_count,
             success: handle_activate_multi_response
         });
-    }
+    };
+
+    // parse the url and return back relevant
+    // node id
+    var get_node_from_url = function() {
+        // get url
+        var url = document.location.href;
+
+        // split on slashes
+        var pieces = url.split('/');
+
+        // grab the piece after our domain
+        var node_id;
+        Ext.each(pieces,function(p) {
+            // our node id is the first number we find
+            var i = parseInt(p);
+            if(!isNaN(i) && p.indexOf('127.0.0.1') == -1) {
+                console.log('is number: '+i);
+                node_id = i;
+                return false;
+            }
+        });
+
+        return node_id;
+    };
+
+    // when the page loads we either need
+    // to loadup the node that's defined in the url
+    // or load the default front page
+    var handle_page_load = function() {
+        // see if there is a node in the url
+        var node_id = get_node_from_url();
+
+        // if there is a node activate it
+        if(!Ext.isEmpty(node_id)) {
+            activate(node_id);
+        }
+
+        // if not, default load
+        else {
+            load_front_page();
+        }
+    };
 
     // function to update our view
     var activate = function(id) {
@@ -345,6 +388,13 @@
         });
     };
 
+    // we want to refresh the page's data
+    // for now this means doing a load
+    // for the current id
+    var refresh_page_data = function(form) {
+        activate(last_data.id);
+    };
+
     // submit a node update / create
     var submit_node_update = function(form) {
         // if there is an id in the form than
@@ -362,6 +412,9 @@
                 // now that we have submitted we
                 // can clear the form
                 form.remove();
+
+                // refresh the page
+                refresh_page_data();
             }
         });
     };
@@ -450,7 +503,7 @@
     // disable AJAX requests adding a random
     // arg for caching
     Ext.onReady(function() { Ext.Ajax.disableCaching = false; });
-    Ext.onReady(load_front_page);
+    Ext.onReady(handle_page_load);
     </script>
 
 
