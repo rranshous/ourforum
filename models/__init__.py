@@ -237,9 +237,10 @@ class User(JsonNode):
     The user node will hold info about the users.
     """
 
-    handle = JsonAttribute()
-    avatar_url = JsonAttribute()
-    password_hash = JsonAttribute()
+    handle = JsonAttribute('')
+    avatar_url = JsonAttribute('')
+    password_hash = JsonAttribute('')
+    feed_urls = JsonAttribute('') # for now just semi-colon seperated string
 
     def set_password(self,p):
         """ sets users password hash based on passed string """
@@ -252,6 +253,13 @@ class User(JsonNode):
     def create_password_hash(cls,p):
         """ returns back hashed version of password """
         return sha1(p).hexdigest()
+
+    def __repr__(self):
+        if self.handle:
+            return self.handle
+        if self.id:
+            return '<User %s>' % self.id
+        return '<User>'
 
 class Author(User):
     """ User who author'd a node """

@@ -189,7 +189,9 @@ class Node(BaseController):
         # get the fields from the node type
         fields = node_class._json_attribute_dict()
 
-        return dumps(fields)
+        # add in our type
+        return dumps({'fields':fields,'type':node_class.__name__})
+
 
     @cherrypy.expose
     def get_types(self):

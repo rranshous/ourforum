@@ -195,7 +195,6 @@
     }
 
     var relative_filter_items = [];
-    var possible_filters = [];
 
     var _handle_filter_button = function() {
         if(relative_filter_items.indexOf(this.type) != -1) {
@@ -208,7 +207,7 @@
         refresh_page_data();
     };
 
-    var update_filter_buttons = function() {
+    var update_filter_buttons = function(possible_filters) {
         var container = Ext.get('filter_button_container');
         container.select('button').each(function(b) {
             b.remove();
@@ -226,11 +225,12 @@
     };
 
     var update_possible_filters = function(relatives) {
+        var possible_filters = [];
         Ext.each(relatives,function(r) {
             if(possible_filters.indexOf(r.type) == -1)
                 possible_filters.push(r.type);
         },this);
-        update_filter_buttons();
+        update_filter_buttons(possible_filters);
     };
 
     // filter relative nodes if a relative filter is set
@@ -283,7 +283,11 @@
         var data = event.state;
 
         // load the data
-        load_node_data(data.id);
+        if(data && data.id) {
+            load_node_data(data.id);
+        } else {
+            load_front_page();
+        }
     };
 
     var _handle_activate_response = function(data) {
@@ -359,11 +363,13 @@
 
         // if there is a node activate it
         if(!Ext.isEmpty(node_id)) {
+            console.log('loading node data');
             load_node_data(node_id);
         }
 
         // if not, default load
         else {
+            console.log('loading front page');
             load_front_page();
         }
     };
@@ -373,7 +379,11 @@
         console.log('activating '+id)
 
         // add it to our state, handler will load the data
-        window.history.pushState({'id':id}, 'Node: '+id, '/'+id);
+        // update the window's url
+        window.history.pushState({
+            'id':id,
+            'relative_filter_items':relative_filter_items
+        }, 'Node: '+id, '/'+id);
 
         // load the data
         load_node_data(id);
@@ -390,18 +400,25 @@
         
     };
 
-    // function which will return back the fields
-    // a node has
-    var get_node_fields = function(node_type,callback,scope) {
+    // get's a node's description
+    var get_node_description = function(node_type,callback,scope) {
+        // if node_type is a number than it's def not a type
+        var num_node_type = parseInt(node_type);
+        if(!isNaN(num_node_type)) {
+            var url = '/node/describe/?id='+num_node_type;
+        } else {
+            var url = '/node/describe/'+node_type;
+        }
         Ext.Ajax.request({
             scope:this,
-            url:'/node/describe/'+node_type,
+            url:url,
             success: function(response) {
                 data = Ext.decode(response.responseText);
-                callback.apply(scope,[data]);
+                callback.call(scope,data);
             }
         });
     };
+
 
     // we want to refresh the page's data
     // for now this means doing a load
@@ -444,14 +461,29 @@
                                 'name="{name}"',
                                 'value="{value}"',
                                 '</label><br/>'),
+
         'hidden': new Ext.Template('<input type="hidden"',
                                    'name="{name}"',
                                    'value="{value}"')
+
+    };
+
+    var edit_current_node = function() {
+        // make sure we're on a node
+        if(Ext.isEmpty(current_data)) return false;
+
+        // get the node's description + send it off 2 edit
+        get_node_description(current_data.id,function(data) {
+            show_node_edit(data.type,data.fields,current_data);
+        },this);
     };
 
     var show_node_edit = function(node_type,fields,data) {
         // get the container
         var container = Ext.get('form_container');
+
+        // make room! make room I say !
+        container.update('');
 
         console.log({'node_type':node_type,'fields':fields,'data':data});
 
@@ -481,6 +513,8 @@
                                                'value':data['_add_relative']}));
         }
 
+        console.log('adding form')
+
         // render in our form
         var form = Ext.DomHelper.append(container,{
             tag:'form',
@@ -507,9 +541,10 @@
     // to an existing node
     var add_comment = function(relative_id) {
         // first get the fields that a comment can have
-        get_node_fields('Comment',function(fields) {
+        get_node_description('Comment',function(data) {
             // now that we know the fields,
             // put up a form w/ those fields
+            var fields = data.fields;
             show_node_edit('Comment',fields,{'_add_relative':relative_id});
         },this);
     };
@@ -517,18 +552,18 @@
     // generic method for adding a new node
     var add_node = function(type,relative_id) {
         // first things first, find out what fields the node type has
-        get_node_fields(type,function(fields) {
+        get_node_description(type,function(data) {
             // now that we know the fields,
             // put up a form w/ those fields
+            var fields = data.fields;
             show_node_edit('Comment',fields,{'_add_relative':relative_id});
-            
         },this);
-    }
+    };
 
     // queries the server for the list of possible nodes
     var get_node_types = function(callback,scope) {
         Ext.Ajax.request({
-            url:'/nodes/get_types',
+            url:'/node/get_types',
             success:function(response) {
                 var types = Ext.decode(response.responseText);
                 // push those types along
@@ -540,10 +575,11 @@
     // this function is going to add buttons for adding new nodes
     var update_new_node_buttons = function() {
         // where are we putting these buttons?
-        var container = Ext.get('node_action_container');
+        var container = Ext.get('add_nodes');
 
         // first we ask the server what all the different types are
         get_node_types(function(types) {
+            console.log({node_types: types});
             // add buttons to our container to add new nodes
             // of each type
             Ext.each(types,function(type) {
@@ -553,17 +589,20 @@
                     class: "add_node "+type
                 },true);
                 button.on('click',
-                          add_node.create_callback(add_node,type));
+                          add_node.createCallback(type));
             });
         },this);
     };
 
 
-    // disable AJAX requests adding a random
-    // arg for caching
-    Ext.onReady(function() { Ext.Ajax.disableCaching = false; });
-    Ext.onReady(handle_page_load);
-    Ext.onReady(update_new_node_buttons);
+    // ladies and gentlemen start your engines!
+    var init = function() {
+        Ext.Ajax.disableCaching = false;
+        handle_page_load();
+        update_new_node_buttons();
+    };
+    Ext.onReady(init());
+
     </script>
 
 
@@ -621,6 +660,10 @@
     </div>
     <hr/>
     <div id="node_action_container">
+        <div id="add_nodes">Add Node: </div>
+        <button onClick="edit_current_node();" id="edit_node">
+            Edit Current Node
+        </button>
     </div>
     <hr/>
     <div id="filter_button_container">
@@ -629,4 +672,5 @@
     <div id="relative_container">
     </div>
 </body>
+
 </html>

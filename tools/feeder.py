@@ -64,7 +64,7 @@ class Feeder:
                     v = entry.get(attr)
                     if attr in value_modifiers:
                         v = value_modifiers.get(attr)(v)
-                        print 'v: %s' % v
+                        print 'len v: %s' % len(v)
                     setattr(node,k,v)
                     break
 
