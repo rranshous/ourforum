@@ -33,8 +33,6 @@ if __name__ == "__main__":
     # set values on the request object for what section / subsection
     cherrypy.tools.set_section = cherrypy.Tool('before_handler', set_section)
 
-    # create our app from root
-    app = cherrypy.Application(c.Root())
 
     # get this thing hosted
     if 'production' in sys.argv:
@@ -49,12 +47,20 @@ if __name__ == "__main__":
         # update the server's config
         cherrypy.config.update(config)
 
+        # create our app from root
+        app = cherrypy.Application(c.Root(),config=config)
 
+        # TODO: not hardcode
         server = wsgiserver.CherryPyWSGIServer(('0.0.0.0', 443), app)
 
         if 'production' in sys.argv:
             # associate the ssl adapter to the server
             server.ssl_adapter = ssl_adapter
+
+        # we're probably root, lets switch to our www-data user/group
+        # TODO: not hardcode
+        server.uid = 33
+        server.gid = 33
 
         try:
             server.start()
@@ -64,6 +70,8 @@ if __name__ == "__main__":
 
     else:
         config = './cherryconfig.ini'
+        # create our app from root
+        app = cherrypy.Application(c.Root(),config=config)
         cherrypy.quickstart(app,config=config)
 
 

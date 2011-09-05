@@ -14,9 +14,6 @@ class Root(BaseController):
     def default(self,*args,**kwargs):
         return render('/node.html');
 
-    @cherrypy.expose
-    def login(self,*args,**kwargs):
-        pass
 
     @cherrypy.expose
     @public
