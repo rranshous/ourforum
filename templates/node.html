@@ -497,6 +497,8 @@
         for(name in fields) {
             type = fields[name];
             console.log({'type':type,'name':name});
+            var value = data[name];
+            if(type=='str') { value = escape(value); }
             form_html.push(FIELD_TEMPLATE[type].apply({'name':name,
                                                        'value':data[name]}));
         }
