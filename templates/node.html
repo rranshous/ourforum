@@ -363,7 +363,7 @@
 
         // if there is a node activate it
         if(!Ext.isEmpty(node_id)) {
-            console.log('loading node data');
+            console.log('loading node data: '+node_id);
             load_node_data(node_id);
         }
 
@@ -392,6 +392,7 @@
     // load up data from the server and display it
     var load_node_data = function(id) {
         // fetch the nodes data
+        console.log('loading node data: '+id);
         var depth = 2;
         Ext.Ajax.request({
             url:'/node/get/'+id+'/'+depth+'/',
@@ -424,7 +425,11 @@
     // for now this means doing a load
     // for the current id
     var refresh_page_data = function(form) {
-        activate(last_data.id);
+        if(Ext.isEmpty(last_data.id)) {
+            load_front_page();
+        } else {
+            activate(last_data.id);
+        }
     };
 
     // submit a node update / create
@@ -459,12 +464,12 @@
                                 '</span> ',
                                 '<input type="text"',
                                 'name="{name}"',
-                                'value="{value}"',
+                                'value="{value}"/>',
                                 '</label><br/>'),
 
         'hidden': new Ext.Template('<input type="hidden"',
                                    'name="{name}"',
-                                   'value="{value}"')
+                                   'value="{value}"/>')
 
     };
 
@@ -552,11 +557,12 @@
     // generic method for adding a new node
     var add_node = function(type,relative_id) {
         // first things first, find out what fields the node type has
+        console.log({add_node_type:type});
         get_node_description(type,function(data) {
             // now that we know the fields,
             // put up a form w/ those fields
             var fields = data.fields;
-            show_node_edit('Comment',fields,{'_add_relative':relative_id});
+            show_node_edit(type,fields,{'_add_relative':relative_id});
         },this);
     };
 
@@ -574,14 +580,15 @@
 
     // this function is going to add buttons for adding new nodes
     var update_new_node_buttons = function() {
-        // where are we putting these buttons?
-        var container = Ext.get('add_nodes');
 
         // first we ask the server what all the different types are
         get_node_types(function(types) {
             console.log({node_types: types});
             // add buttons to our container to add new nodes
             // of each type
+            // where are we putting these buttons?
+            var container = Ext.get('add_nodes');
+            console.log({adding_new_node_buttons:container});
             Ext.each(types,function(type) {
                 var button = Ext.DomHelper.append(container,{
                     tag: 'button',
@@ -591,6 +598,14 @@
                 button.on('click',
                           add_node.createCallback(type));
             });
+            // add the add comment button for this
+            var button = Ext.DomHelper.append(container,{
+                tag: 'button',
+                html: 'Add Comment to this node',
+                class: "add_node relative Comment"
+            },true);
+            // we want to setup a relative for this one
+            button.on('click',add_node.createCallback("Comment",current_data.id));
         },this);
     };
 

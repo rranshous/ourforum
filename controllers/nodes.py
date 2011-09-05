@@ -34,7 +34,8 @@ class Node(BaseController):
         # recursion, recursion, recursion
         def _lvl(nodes,root_nodes,current_depth,depth):
             lvl = []
-            cherrypy.log( 'nodes: %s' % [x.id for x in nodes])
+            if nodes:
+                cherrypy.log( 'nodes: %s' % [x.id for x in nodes])
             for node in nodes:
                 o = node.json_obj()
                 cherrypy.log('o: %s' % o)
@@ -89,7 +90,7 @@ class Node(BaseController):
                 self._modify_relative(node,relative,m_add,m_remove)
         else:
             print 'not iterable'
-            relative = m.Node.get(relatives_ids)
+            relative = m.Node.get(relative_ids)
             self._modify_relative(node,relative.m_add,m_remove)
 
 
@@ -98,13 +99,13 @@ class Node(BaseController):
         # we are going to update an existing node
         # this can not involve changing it's type (right now)
 
-        node = kwargs.get('id')
+        node = m.Node.get(kwargs.get('id'))
         if not node:
             error(404)
 
         # update the node from the kwargs
         updated = { };
-        for k,v in kwargs:
+        for k,v in kwargs.iteritems():
             if k == 'id': continue
             if hasattr(node,k):
                 setattr(node,k,v)
@@ -113,12 +114,12 @@ class Node(BaseController):
         # see if there are any more tasks
         if '_add_relative' in kwargs:
             cherrypy.log('adding relative: %s' % kwargs.get('_add_relative'))
-            to_add = kwargs.get('_add_relative')
-            self._modify_relatives(node,to_add,m_add=True)
+            to_add = m.Node.get(kwargs.get('_add_relative'))
+            self._modify_relative(node,to_add,m_add=True)
 
         if '_remove_relative' in kwargs:
-            to_remove = kwargs.get('_remove_relative')
-            self._modify_relatives(node,to_remove,m_remove=True)
+            to_remove = m.Node.get(kwargs.get('_remove_relative'))
+            self._modify_relative(node,to_remove,m_remove=True)
 
         # save our changes
         m.session.commit()
@@ -129,6 +130,7 @@ class Node(BaseController):
     @cherrypy.expose
     def create(self,**kwargs):
         # create a new node, get the node based on the type
+        cherrypy.log('type: %s' % kwargs.get('type'))
         node_class = getattr(m,kwargs.get('type'))
         if not node_class:
             error(500,'wrong node class')
@@ -139,12 +141,13 @@ class Node(BaseController):
 
         # create our node
         node = node_class(**kwargs)
+        cherrypy.log('node: %s')
 
         # see if it has any relatives
         if '_add_relative' in kwargs:
             cherrypy.log('adding relative: %s' % kwargs.get('_add_relative'))
-            to_add = kwargs.get('_add_relative')
-            self._modify_relatives(node,to_add,m_add=True)
+            to_add = m.Node.get(kwargs.get('_add_relative'))
+            self._modify_relative(node,to_add,m_add=True)
 
         # commit that shit!
         m.session.commit()

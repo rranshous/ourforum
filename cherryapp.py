@@ -1,19 +1,22 @@
 #!/usr/bin/python
 import cherrypy
-import sys
+from cherrypy import wsgiserver
+import sys, os
 from auth import set_user
 from helpers import set_section
-import logging as log
+import logging
 import models as m
 import controllers as c
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 if __name__ == "__main__":
+    log.info('starting')
+
     # setup the db connection
     m.setup()
-
-    # create our app from root
-    app = cherrypy.Application(c.Root())
 
     # setup a tool to rset our db session
     cherrypy.tools.reset_db = cherrypy.Tool('on_end_resource',
@@ -32,8 +35,29 @@ if __name__ == "__main__":
 
     # get this thing hosted
     if 'production' in sys.argv:
-        config = 'cherryconfig.production.ini'
+        log.info('productin')
+        config = './cherryconfig.production.ini'
     else:
         config = './cherryconfig.ini'
-        cherrypy.quickstart(app, config=config)
 
+    # setup our ssl adapter
+    cert_path = '/var/certs/server.crt'
+    key_path = '/var/certs/server.key'
+    ssl_adapter = wsgiserver.get_ssl_adapter_class()(cert_path, key_path)
+
+    # update the server's config
+    cherrypy.config.update(config)
+
+    # create our app from root
+    app = cherrypy.Application(c.Root())
+
+    server = wsgiserver.CherryPyWSGIServer(('0.0.0.0', 443), app)
+
+    # associate the ssl adapter to the server
+    server.ssl_adapter = ssl_adapter
+
+    try:
+        server.start()
+    except:
+        server.stop()
+        raise
