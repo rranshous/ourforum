@@ -143,11 +143,15 @@ class Node(BaseController):
         node = node_class(**kwargs)
         cherrypy.log('node: %s')
 
+        # add the current user as a relative for creating it
+        self._modify_relative(node,get_user(),m_add=True)
+
         # see if it has any relatives
         if '_add_relative' in kwargs:
             cherrypy.log('adding relative: %s' % kwargs.get('_add_relative'))
             to_add = m.Node.get(kwargs.get('_add_relative'))
             self._modify_relative(node,to_add,m_add=True)
+
 
         # commit that shit!
         m.session.commit()
