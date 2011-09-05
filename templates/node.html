@@ -327,10 +327,6 @@
             url:'/node/recent/'+front_page_count,
             success: handle_activate_multi_response
         });
-        window.history.pushState({
-            'id':'',
-            'relative_filter_items':relative_filter_items
-        }, 'Front Page', '/');
     };
 
     // parse the url and return back relevant
