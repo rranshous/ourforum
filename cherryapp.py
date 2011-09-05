@@ -1,14 +1,19 @@
 #!/usr/bin/python
 import cherrypy
-import sys
+import sys, os
 from auth import set_user
 from helpers import set_section
-import logging as log
+import logging
 import models as m
 import controllers as c
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 if __name__ == "__main__":
+    log.info('starting')
+
     # setup the db connection
     m.setup()
 
@@ -26,8 +31,9 @@ if __name__ == "__main__":
 
     # get this thing hosted
     if 'production' in sys.argv:
-        config = 'cherryconfig.production.ini'
+        log.info('productin')
+        config = './cherryconfig.production.ini'
     else:
         config = './cherryconfig.ini'
-        cherrypy.quickstart(app, config=config)
+    cherrypy.quickstart(app, config=config)
 
