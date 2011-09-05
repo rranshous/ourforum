@@ -605,7 +605,9 @@
                 class: "add_node relative Comment"
             },true);
             // we want to setup a relative for this one
-            button.on('click',add_node.createCallback("Comment",current_data.id));
+            button.on('click',function() {
+                add_node("Comment",current_data.id);
+            });
         },this);
     };
 
