@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import cherrypy
+import sys
 from auth import set_user
 from helpers import set_section
 import logging as log
@@ -24,5 +25,9 @@ if __name__ == "__main__":
     cherrypy.tools.set_section = cherrypy.Tool('before_handler', set_section)
 
     # get this thing hosted
-    cherrypy.quickstart(app, config='cherryconfig.ini')
+    if 'production' in sys.argv:
+        config = 'cherryconfig.production.ini'
+    else:
+        config = './cherryconfig.ini'
+        cherrypy.quickstart(app, config=config)
 
