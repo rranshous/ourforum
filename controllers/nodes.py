@@ -212,3 +212,9 @@ class Node(BaseController):
                 types.append(a.__name__)
 
         return dumps(types)
+
+
+    @cherrypy.expose
+    def get_pass_hash(self,s=None):
+        """ returns pass hash of arg """
+        return m.User.create_password_hash(s)
