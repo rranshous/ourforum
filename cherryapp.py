@@ -2,7 +2,7 @@
 import cherrypy
 from cherrypy import wsgiserver
 import sys, os
-from auth import set_user
+from auth import set_user, check_active_login
 from helpers import set_section
 import logging
 import models as m
@@ -33,31 +33,37 @@ if __name__ == "__main__":
     # set values on the request object for what section / subsection
     cherrypy.tools.set_section = cherrypy.Tool('before_handler', set_section)
 
+    # create our app from root
+    app = cherrypy.Application(c.Root())
+
     # get this thing hosted
     if 'production' in sys.argv:
         log.info('productin')
         config = './cherryconfig.production.ini'
+
+        # setup our ssl adapter
+        cert_path = '/var/certs/server.crt'
+        key_path = '/var/certs/server.key'
+        ssl_adapter = wsgiserver.get_ssl_adapter_class()(cert_path, key_path)
+
+        # update the server's config
+        cherrypy.config.update(config)
+
+
+        server = wsgiserver.CherryPyWSGIServer(('0.0.0.0', 443), app)
+
+        if 'production' in sys.argv:
+            # associate the ssl adapter to the server
+            server.ssl_adapter = ssl_adapter
+
+        try:
+            server.start()
+        except:
+            server.stop()
+            raise
+
     else:
         config = './cherryconfig.ini'
+        cherrypy.quickstart(app,config=config)
 
-    # setup our ssl adapter
-    cert_path = '/var/certs/server.crt'
-    key_path = '/var/certs/server.key'
-    ssl_adapter = wsgiserver.get_ssl_adapter_class()(cert_path, key_path)
 
-    # update the server's config
-    cherrypy.config.update(config)
-
-    # create our app from root
-    app = cherrypy.Application(c.Root())
-
-    server = wsgiserver.CherryPyWSGIServer(('0.0.0.0', 443), app)
-
-    # associate the ssl adapter to the server
-    server.ssl_adapter = ssl_adapter
-
-    try:
-        server.start()
-    except:
-        server.stop()
-        raise

@@ -105,6 +105,23 @@ class JsonNode(Node):
         for k,v in kwargs.iteritems():
             data[k] = v
 
+    @classmethod
+    def get_by(cls,**kwargs):
+        """
+        over ride to provide compatibility,
+        shitty list look through
+        """
+        for o in cls.query.all():
+            count = 0
+            for k,v in kwargs.iteritems():
+                o_v = getattr(o,k)
+                if o_v == v:
+                    count += 1
+            if count == len(kwargs):
+                return o
+        return None
+
+
     def _update_default_data(self):
         """ since we can't set our data on init we
             are going to have to set it after """

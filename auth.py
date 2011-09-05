@@ -32,6 +32,8 @@ def check_active_login(skip=False,login=True):
     checks that there is an active user or sends back a 403
     """
 
+    cherrypy.log('checking active login %s %s' % (skip,login))
+
     try:
         if skip:
             return True
@@ -63,7 +65,9 @@ def check_active_login(skip=False,login=True):
 def auth_credentials(handle,password):
     """ returns user object if password is good """
     user = m.User.get_by(handle=handle)
+    cherrypy.log('user: %s' % user)
     if not user or hash_password(password) != user.password:
+        cherrypy.log('no user or no password match')
         return False
     return user
 
