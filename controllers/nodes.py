@@ -163,7 +163,7 @@ class Node(BaseController):
     ## helper methods !
 
     @cherrypy.expose
-    def recent(self,count=10):
+    def recent(self,count=10,depth=1):
         # query for the most recent nodes
         query = m.session.query(m.Node.id).order_by(m.Node.id.desc())
 
@@ -173,7 +173,7 @@ class Node(BaseController):
         # pull the id's off the returned tuple
         ids =[i[0] for i in query.all()]
 
-        return dumps(self.get_data(ids))
+        return dumps(self.get_data(ids,depth))
 
     @cherrypy.expose
     def describe(self,node_type=None,id=None):
