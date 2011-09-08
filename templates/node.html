@@ -91,6 +91,9 @@
     var bold = function(v) {
         return '<b>'+v+'</b>';
     };
+    var newline_breaks = function(v) {
+        return v.replace(new RegExp( "\\n", "g" ),'<br/>');
+    }
     var image = function(size) {
         return (function(v) {
             var r = '<img src="'+v+'" ';
@@ -116,7 +119,7 @@
 
     T('Comment',[
         F('title',bold),
-        F('comment')
+        F('comment',newline_breaks)
     ]);
 
     T('User',[
@@ -322,7 +325,7 @@
     };
 
     var load_front_page = function(count) {
-        var front_page_count = count || 10;
+        var front_page_count = count || 100;
         Ext.Ajax.request({
             url:'/node/recent/'+front_page_count,
             success: handle_activate_multi_response
