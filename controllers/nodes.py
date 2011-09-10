@@ -7,7 +7,7 @@ from inspect import isclass
 class Node(BaseController):
     """ server / edit / create nodes """
 
-    def get_data(self,node_ids,depth=1):
+    def get_data(self,node_ids,depth=1,show_repeats=False):
         """ return back the json for the nodes,
             and their relative's possibly """
 
@@ -38,12 +38,13 @@ class Node(BaseController):
                 cherrypy.log( 'nodes: %s' % [x.id for x in nodes])
             for node in nodes:
                 o = node.json_obj()
-                cherrypy.log('o: %s' % o)
                 lvl.append(o)
                 if current_depth < depth:
-                    relatives = [x for x in node.relatives
-                                       if x not in root_nodes]
-                    print 'relatives: %s' % relatives
+                    relatives = node.relatives
+                    # if we are not skipping we filter out nodes from the root
+                    if not show_repeats:
+                        relatives = [x for x in node.relatives
+                                     if x not in root_nodes]
                     if relatives:
                         o['_relatives'] = _lvl(relatives,root_nodes,
                                                current_depth+1,depth)
@@ -173,7 +174,7 @@ class Node(BaseController):
         # pull the id's off the returned tuple
         ids =[i[0] for i in query.all()]
 
-        return dumps(self.get_data(ids,depth))
+        return dumps(self.get_data(ids,depth,show_repeats=True))
 
     @cherrypy.expose
     def describe(self,node_type=None,id=None):

@@ -34,12 +34,22 @@
         return '';
     };
 
+    // wrap our node's html in something
+    var node_container = function(data,html) {
+        // just wrap the html in a div w/ the node type
+        var type = data.type;
+        var r  = '<div class="node '+type+'">';
+        r = r + html;
+        r = r + '</div>'
+        return r;
+    };
+
     var render = function(data) {
         // find our renderer
         var r = node_renderers[data['type']];
         if(Ext.isEmpty(r))
             r = node_renderers['DEFAULT'];
-        return r(data);
+        return node_container(data,r(data));
     }
 
     var T = function(type,renderers) {
@@ -182,11 +192,15 @@
 
     // update a node
     var update_node = function(el,data) {
-        el.update(render(data));
+        var html = render(data);
+        var node_el = Ext.get(Ext.DomHelper.append(el,html,true));
         if(el != MAIN_EL()) {
             append_focus_button(el,data);
         }
-
+        // render in the relatives
+        Ext.each(get_relatives(data), function(r) {
+            update_node(node_el,r);
+        });
     };
 
 
@@ -263,16 +277,12 @@
     };
 
     // add relative nodes
-    var add_relative = function(data,node_el) {
-        var el = Ext.DomHelper.append(RELATIVE_CONTAINER(node_el),{
-            tag: 'div',
-            cls: 'relative_node'
-        },true);
-        update_node(el,data);
-        var relatives = get_relatives(data);
-        Ext.each(data._relatives,function(rel_data) {
-            add_relative(rel_data,el);
-        },this);
+    var add_relative = function(data,node_el,level) {
+        console.log({add_relative:[data,node_el,level]});
+        if(level > 2) { console.log('bad lvl'); return; }
+        if(Ext.isEmpty(level)) {
+            level = 1;
+        };
     };
 
     var current_data = {};
@@ -305,12 +315,7 @@
 
         // now update the relatives
         // first clear out the relatives we have showing now
-        clear_relatives();
-
-        // now that we have a clean canvas, render in
-        // our relatives
-        var relatives = get_relatives(data);
-        Ext.each(data._relatives,add_relative);
+        //clear_relatives();
     };
 
     var handle_activate_response = function(response) {
@@ -326,8 +331,9 @@
 
     var load_front_page = function(count) {
         var front_page_count = count || 100;
+        var depth = 2;
         Ext.Ajax.request({
-            url:'/node/recent/'+front_page_count,
+            url:'/node/recent/'+front_page_count+'/'+depth,
             success: handle_activate_multi_response
         });
     };
@@ -396,7 +402,7 @@
     var load_node_data = function(id) {
         // fetch the nodes data
         console.log('loading node data: '+id);
-        var depth = 2;
+        var depth = 3;
         Ext.Ajax.request({
             url:'/node/get/'+id+'/'+depth+'/',
             success: handle_activate_response
@@ -636,11 +642,24 @@
         #relative_container {
             margin: 5px 10px 10px 20px;;
         }
+        .node {
+            position: relative;
+        }
+        .node.User {
+
+        }
+        .node.FeedEntry {
+
+        }
+        .node.Comment {
+
+        }
         .relative_node {
             border: 4px solid #cccccc;
             padding: 10px;
             margin: 0 0 10px 0;
-            position: relative;
+        }
+        .relative_container {
         }
         button {
             border: 1px solid #cccccc;
@@ -678,8 +697,6 @@
     <hr/>
     <div id="form_container">
     </div>
-    <div id="main_el">
-    </div>
     <hr/>
     <div id="node_action_container">
         <div id="add_nodes">Add Node: </div>
@@ -691,7 +708,7 @@
     <div id="filter_button_container">
     </div>
     <hr/>
-    <div id="relative_container">
+    <div id="main_el">
     </div>
 </body>
 
