@@ -55,22 +55,29 @@
 
     var T = function(type,renderers) {
         node_renderers[type] = function(data) {
-            var pieces = [];
+            var first = true;
+            var to_return = '';
             for(var k in data) {  
                 var result = data[k];
                 var r;
                 Ext.each(renderers,function(renderer) {
+                    // if we want to use the renderer once, skip
+                    // if not first
+                    if(renderer.once && !first) { console.log('skippin'); return; }
+                    console.log({first:first});
+                    console.log({once:renderer.once});
+
                     // we are assuming/enforcing only one renderer hit
                     r = renderer(k,data[k]);
                     if(!Ext.isEmpty(r) && r) {
-                        pieces.push(r);
-                        return false;
+                        to_return += ''+r;
+                        console.log(k+' adding: '+r);
+                        if(!renderer.no_break) {
+                            to_return += '<br/>';
+                        }
                     }
                 },this);
-            }
-            var p, to_return = '';
-            while(p = pieces.pop()) {
-                to_return += ''+p+'<br/>';
+                first = false;
             }
             return to_return;
         };
@@ -88,11 +95,22 @@
         });
     };
 
+    // field renderer
     var F = function() {
         arguments = Array.prototype.slice.call(arguments);
         var name = arguments[0];
         var modifiers = arguments.splice(1);
         return get_renderer(name,modifiers);
+    };
+
+    // strait up string renderer
+    var S = function(str) {
+        var done = false;
+        var r = (function() { return str; });
+        // we don't want this string followed by a break
+        r.no_break = true;
+        r.once = true;
+        return r;
     };
 
     // possible modifiers
@@ -134,8 +152,8 @@
     ]);
 
     T('User',[
-        F('handle',bold),
-        F('avatar_url',image('small'))
+        S('@'),
+        F('handle',bold)
     ]);
 
     T('Author',[
@@ -634,7 +652,7 @@
         .node {
             position: relative;
             margin-left: 20px;
-            padding: 10px;
+            padding: 2em 10px 10px 10px;
         }
         .node.level_0, .node.none .node.level_1 {
             margin-left: 0;
@@ -642,14 +660,18 @@
         }
         .node.User {
             position: absolute;
-            top: 0;
-            right: 0;
+            top: .2em;
+            left: 0;
+            padding: 0px;
+            margin: 0;
         }
         .node.User.level_0 { 
             position: relative;
+            padding: 2em 10px 10px 10px;
         }
         .node.none .node.User.level_1 {
             position: relative;
+            padding: 2em 10px 10px 10px;
         }
         .node.FeedEntry {
 
