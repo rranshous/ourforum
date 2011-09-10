@@ -35,21 +35,22 @@
     };
 
     // wrap our node's html in something
-    var node_container = function(data,html) {
+    var node_container = function(type,level,html) {
         // just wrap the html in a div w/ the node type
-        var type = data.type;
-        var r  = '<div class="node '+type+'">';
-        r = r + html;
-        r = r + '</div>'
+        if(Ext.isEmpty(type)) { type = 'none'; }
+        var r  = '<div class="node '+type+' level_'+level+'">';
+        r = r +  '<div class="node_content">';
+        r = r +  html;
+        r = r +  '</div></div>'
         return r;
     };
 
-    var render = function(data) {
+    var render = function(data,level) {
         // find our renderer
         var r = node_renderers[data['type']];
         if(Ext.isEmpty(r))
             r = node_renderers['DEFAULT'];
-        return node_container(data,r(data));
+        return node_container(data.type,level,r(data));
     }
 
     var T = function(type,renderers) {
@@ -191,15 +192,15 @@
     };
 
     // update a node
-    var update_node = function(el,data) {
-        var html = render(data);
+    var update_node = function(el,data,level) {
+        var html = render(data,level);
         var node_el = Ext.get(Ext.DomHelper.append(el,html,true));
         if(el != MAIN_EL()) {
-            append_focus_button(el,data);
+            append_focus_button(node_el,data);
         }
         // render in the relatives
         Ext.each(get_relatives(data), function(r) {
-            update_node(node_el,r);
+            update_node(node_el,r,level+1);
         });
     };
 
@@ -276,15 +277,6 @@
         return _get_relatives(data._relatives);
     };
 
-    // add relative nodes
-    var add_relative = function(data,node_el,level) {
-        console.log({add_relative:[data,node_el,level]});
-        if(level > 2) { console.log('bad lvl'); return; }
-        if(Ext.isEmpty(level)) {
-            level = 1;
-        };
-    };
-
     var current_data = {};
     var last_data = {};
 
@@ -311,7 +303,8 @@
 
         // the root of data is going to be the node's data
         // use that data to update our main node div
-        update_node(MAIN_EL(),data);
+        MAIN_EL().update('');
+        update_node(MAIN_EL(),data,0);
 
         // now update the relatives
         // first clear out the relatives we have showing now
@@ -402,7 +395,7 @@
     var load_node_data = function(id) {
         // fetch the nodes data
         console.log('loading node data: '+id);
-        var depth = 3;
+        var depth = 2;
         Ext.Ajax.request({
             url:'/node/get/'+id+'/'+depth+'/',
             success: handle_activate_response
@@ -637,16 +630,26 @@
     <style>
         body { padding: 0; margin: 0; }
         #main_el {
-            padding: 15px;
-        }
-        #relative_container {
-            margin: 5px 10px 10px 20px;;
         }
         .node {
             position: relative;
+            margin-left: 20px;
+            padding: 10px;
+        }
+        .node.level_0, .node.none .node.level_1 {
+            margin-left: 0;
+            border-bottom: 1px solid black;
         }
         .node.User {
-
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+        .node.User.level_0 { 
+            position: relative;
+        }
+        .node.none .node.User.level_1 {
+            position: relative;
         }
         .node.FeedEntry {
 
