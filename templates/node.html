@@ -154,6 +154,76 @@
     ]);
 
 
+    // VIEWS
+
+    var views = {};
+    var VIEW = function(name,config) {
+        views[name] = config;
+    };
+
+    var activate_view = function(name) {
+        // get the config
+        var view_config = views[name];
+
+        // create our request for page data
+        var s = view_config.source;
+        var r = view_config.relatives
+        Ext.Ajax.request({
+            url: s.url,
+            params: {
+                always_include_user: r.always_include_user?'1':'0',
+                depth: r.depth,
+                // filters and count are optionsal
+                relative_filters: r.filters?r.filters.join(','):undefined,
+                count: r.count?r.count:undefined
+            },
+            success: function(response) {
+                var data = Ext.decode(response);
+                
+                // see if it's a list of nodes or a single node
+                if(data.length) {
+                    // we are a list of nodes
+                    _handle_activate_multi_response(data);
+
+                } else {
+                    // it's a single node's data
+                    _handle_activate_response(data);
+                };
+            }
+        });
+    };
+
+
+    // try our hand here @ coming up w/ a way of expressing views
+
+    // the first view I know i want shows me the feed entries,
+    // (including the author node for the feed entry), and
+    // the comments for the entry
+    // it would also be nice if I could add in an inline add
+    // comment form which after submission would reload the data
+    // for the node which i added a comment to
+
+    VIEW('feed',{
+        source: {
+            url: '/node/recent',
+            count: 100 // how many recent items do we pull ?
+        },
+        relatives: {
+            // this is the depth of relatives we'll pull
+            depth: 3,
+            // if we want to always include the user relative of a node
+            // even if it means we go a lvl deeper
+            always_include_user: true, // true is default
+            filters: [
+                // we want the root relatives to only be feed entries
+                // this should fill our page with feed entries
+                '/FeedEntry',
+            ]
+        }
+    });
+
+
+
     // the main elements on the page we touch
     var MAIN_EL = function() {
         return Ext.get('main_el');
@@ -187,7 +257,7 @@
                                      true);
         b.on('click',function(event) { 
             event.preventDefault();
-            activate(data.id);
+            activate_node(data.id);
         });
     };
 
@@ -217,7 +287,7 @@
         // make sure they didn't click a link
 
         // update view to this node
-        activate(options.id);
+        activate_node(options.id);
     };
 
     // update a node
@@ -256,35 +326,38 @@
         refresh_page_data();
     };
 
+    // replace the filter buttons w/ the list provided
     var update_filter_buttons = function(possible_filters) {
+        console.log({possible_filteres:possible_filters});
+        // clear out the existing buttons
         var container = Ext.get('filter_button_container');
         container.select('button').each(function(b) {
             b.remove();
         },this);
+        // add a button for each type
         Ext.each(possible_filters,function(type) {
             var b = Ext.DomHelper.append(container,
                                          '<button>'+type+'</button>',
                                          true);
 
+            // connect the button el w/ it's type
             b.type = type;
+
+            // if it's currently active (in filter list) add class
             if(relative_filter_items.indexOf(b.type) != -1)
                 b.addClass('enabled');
+            // handle click
             b.on('click',_handle_filter_button);
         },this);
     };
 
     var update_possible_filters = function(relatives) {
-        var possible_filters = [];
-        Ext.each(relatives,function(r) {
-            if(possible_filters.indexOf(r.type) == -1)
-                possible_filters.push(r.type);
-        },this);
-        update_filter_buttons(possible_filters);
+        // request all the types
+        get_node_types(update_filter_buttons);
     };
 
     // filter relative nodes if a relative filter is set
     var filter_relatives = function(relatives) {
-        update_possible_filters(relatives);
         if(!Ext.isEmpty(relative_filter_items)) {
             var _to_remove = [];
             Ext.each(relatives,function(rel) {
@@ -405,10 +478,13 @@
             console.log('loading front page');
             load_front_page();
         }
+
+        // update our filter types
+        update_possible_filters();
     };
 
     // function to update our view
-    var activate = function(id) {
+    var activate_node = function(id) {
         console.log('activating '+id)
 
         // add it to our state, handler will load the data
@@ -420,6 +496,9 @@
 
         // load the data
         load_node_data(id);
+
+        // update our filter types
+        update_possible_filters();
     };
 
     // load up data from the server and display it
@@ -461,7 +540,7 @@
         if(Ext.isEmpty(last_data.id)) {
             load_front_page();
         } else {
-            activate(last_data.id);
+            activate_node(last_data.id);
         }
     };
 
