@@ -57,28 +57,20 @@
         node_renderers[type] = function(data) {
             var first = true;
             var to_return = '';
-            for(var k in data) {  
-                var result = data[k];
-                var r;
-                Ext.each(renderers,function(renderer) {
-                    // if we want to use the renderer once, skip
-                    // if not first
-                    if(renderer.once && !first) { console.log('skippin'); return; }
-                    console.log({first:first});
-                    console.log({once:renderer.once});
-
-                    // we are assuming/enforcing only one renderer hit
+            var r;
+            Ext.each(renderers,function(renderer) {
+                for(var k in data) {
+                    if(!first && renderer.once) { return; }
                     r = renderer(k,data[k]);
                     if(!Ext.isEmpty(r) && r) {
-                        to_return += ''+r;
-                        console.log(k+' adding: '+r);
+                        to_return += r;
                         if(!renderer.no_break) {
                             to_return += '<br/>';
                         }
                     }
-                },this);
-                first = false;
-            }
+                    first = false;
+                };
+            });
             return to_return;
         };
     };
@@ -209,12 +201,33 @@
                                      true);
     };
 
+    var handle_node_dblclick = function(event,target,options) {
+        // node: This gets called once for each stacked node
+        event.preventDefault();
+
+        // see if our node is actually what was clicked on
+        var node_target = Ext.get(event.getTarget('.node'));
+        if(node_target != this) {
+            // they didn't click on us =/
+            return;
+        }
+
+        console.log('node dbl click');
+
+        // make sure they didn't click a link
+
+        // update view to this node
+        activate(options.id);
+    };
+
     // update a node
     var update_node = function(el,data,level) {
         var html = render(data,level);
         var node_el = Ext.get(Ext.DomHelper.append(el,html,true));
+        node_el.on('dblclick',handle_node_dblclick,node_el,{id:data.id});
         if(el != MAIN_EL()) {
-            append_focus_button(node_el,data);
+            // move away from focus button
+            //append_focus_button(node_el,data);
         }
         // render in the relatives
         Ext.each(get_relatives(data), function(r) {
@@ -665,10 +678,9 @@
             padding: 0px;
             margin: 0;
         }
-        .node.User.level_0 { 
-            position: relative;
-            padding: 2em 10px 10px 10px;
-        }
+        .node.User.level_0 .node.User.level_1 {}
+
+        .node.User.level_0,
         .node.none .node.User.level_1 {
             position: relative;
             padding: 2em 10px 10px 10px;
