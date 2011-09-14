@@ -98,22 +98,39 @@ class Node(BaseController):
         # this could be alot quickly
 
         # recursion, recursion, recursion
-        def _lvl(nodes,root_nodes,current_depth,depth):
+        def _lvl(nodes,root_nodes,current_depth,depth,previous_nodes=[]):
             lvl = []
-            if nodes:
-                cherrypy.log( 'nodes: %s' % [x.id for x in nodes])
+
+            # nothing to see here
+            if not nodes:
+                return lvl
+
+            cherrypy.log( 'nodes: %s' % [x.id for x in nodes])
             for node in nodes:
                 o = node.json_obj()
                 lvl.append(o)
+                relatives = node.relatives
                 if current_depth < depth:
-                    relatives = node.relatives
                     # if we are not skipping we filter out nodes from the root
                     if not show_repeats:
                         relatives = [x for x in node.relatives
                                      if x not in root_nodes]
                     if relatives:
                         o['_relatives'] = _lvl(relatives,root_nodes,
-                                               current_depth+1,depth)
+                                               current_depth+1,depth,
+                                               nodes)
+
+                # if this isn't a user node, fill in it's user rels
+                elif not isinstance(node,m.User):
+                    # fill out user relatives even though
+                    # that means going beyond depth
+                    user_rels = [u for u in relatives if isinstance(u,m.User)]
+
+                    # we don't want to loop back (user > node > same user)
+                    if user_rels and user_rels[0] not in previous_nodes:
+                        o['_relatives'] = [user_rels[0].json_obj()]
+
+
             return lvl
 
         nodes = [m.Node.get(n) for n in node_ids]
