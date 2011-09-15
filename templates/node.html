@@ -154,44 +154,6 @@
     ]);
 
 
-    // VIEWS
-
-    var views = {};
-    var VIEW = function(name,config) {
-        views[name] = config;
-    };
-
-    var activate_view = function(name) {
-        // get the config
-        var view_config = views[name];
-
-        // create our request for page data
-        var s = view_config.source;
-        var r = view_config.relatives
-        Ext.Ajax.request({
-            url: s.url,
-            params: {
-                always_include_user: r.always_include_user?'1':'0',
-                depth: r.depth,
-                // filters and count are optionsal
-                relative_filters: r.filters?r.filters.join(','):undefined,
-                count: r.count?r.count:undefined
-            },
-            success: function(response) {
-                var data = Ext.decode(response);
-                
-                // see if it's a list of nodes or a single node
-                if(data.length) {
-                    // we are a list of nodes
-                    _handle_activate_multi_response(data);
-
-                } else {
-                    // it's a single node's data
-                    _handle_activate_response(data);
-                };
-            }
-        });
-    };
 
 
     // try our hand here @ coming up w/ a way of expressing views
