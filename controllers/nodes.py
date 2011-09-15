@@ -110,6 +110,8 @@ class Node(BaseController):
                 o = node.json_obj()
                 lvl.append(o)
                 relatives = node.relatives
+                # don't wanna go a > b > a
+                relatives = [r for r in relatives if not r in previous_nodes]
                 if current_depth < depth:
                     # if we are not skipping we filter out nodes from the root
                     if not show_repeats:
@@ -126,8 +128,8 @@ class Node(BaseController):
                     # that means going beyond depth
                     user_rels = [u for u in relatives if isinstance(u,m.User)]
 
-                    # we don't want to loop back (user > node > same user)
-                    if user_rels and user_rels[0] not in previous_nodes:
+                    # muah ?
+                    if user_rels:
                         o['_relatives'] = [user_rels[0].json_obj()]
 
 

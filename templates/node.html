@@ -211,9 +211,6 @@
         relatives: {
             // this is the depth of relatives we'll pull
             depth: 3,
-            // if we want to always include the user relative of a node
-            // even if it means we go a lvl deeper
-            always_include_user: true, // true is default
             filters: [
                 // we want the root relatives to only be feed entries
                 // this should fill our page with feed entries
@@ -428,7 +425,7 @@
 
     var load_front_page = function(count) {
         var front_page_count = count || 100;
-        var depth = 2;
+        var depth = 3;
         Ext.Ajax.request({
             url:'/node/recent/'+front_page_count+'/'+depth,
             success: handle_activate_multi_response
@@ -505,7 +502,7 @@
     var load_node_data = function(id) {
         // fetch the nodes data
         console.log('loading node data: '+id);
-        var depth = 2;
+        var depth = 3;
         Ext.Ajax.request({
             url:'/node/get/'+id+'/'+depth+'/',
             success: handle_activate_response
@@ -744,7 +741,7 @@
         .node {
             position: relative;
             margin-left: 20px;
-            padding: 2em 10px 10px 10px;
+            padding: 2.3em 10px 10px 10px;
         }
         .node.level_0, .node.none .node.level_1 {
             margin-left: 0;
@@ -752,15 +749,25 @@
         }
         .node.User {
             position: absolute;
-            top: .2em;
-            left: 0;
+            top: .8em;
+            left: -5px;
             padding: 0px;
             margin: 0;
         }
+        .node.User > .node {
+            display: none;
+        }
         .node.User.level_0 .node.User.level_1 {}
 
+        .node.User > .node.User {
+            position: relative;
+            padding: 2em 10px 10px 10px;
+            margin-left: 20px;
+        }
+
         .node.User.level_0,
-        .node.none .node.User.level_1 {
+        .node.none .node.User.level_1
+         {
             position: relative;
             padding: 2em 10px 10px 10px;
         }
