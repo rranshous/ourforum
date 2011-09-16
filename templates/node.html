@@ -39,7 +39,11 @@
         '<div class="node {type} level_{level}">',
             '<div class="node_content">',
                 '{html}',
-        '</div></div>'
+            '</div>',
+            '<button class="add_node_comment" ',
+            'onClick="handle_node_add_comment(Ext.get(this))"',
+            '>Add Comment</button>',
+        '</div>'
     ]).compile();
 
     var node_container = function(type,level,html) {
@@ -113,16 +117,20 @@
 
     // possible modifiers
     var as_link = function(v) {
+        if(Ext.isEmpty(v)) { return ''; }
         return '<a href="'+v+'">'+v+'</a>';
     };
     var bold = function(v) {
+        if(Ext.isEmpty(v)) { return ''; }
         return '<b>'+v+'</b>';
     };
     var newline_breaks = function(v) {
+        if(Ext.isEmpty(v)) { return ''; }
         return v.replace(new RegExp( "\\n", "g" ),'<br/>');
     }
     var image = function(size) {
         return (function(v) {
+            if(Ext.isEmpty(v)) { return ''; }
             var r = '<img src="'+v+'" ';
             switch(size) {
                 case 'small':
@@ -228,6 +236,18 @@
         activate_node(options.id);
     };
 
+    inline_comment_container_template = new Ext.Template([
+        '<div class="inline_comment_container"></div>'
+    ]).compile();
+    var handle_node_add_comment = function(link_el) {
+        // get the node el
+        var node_el = link_el.parent('.node');
+        // setup a container for the comment
+        var template = inline_comment_container_template;
+        var el = template.append(node_el, {}, true);
+        add_comment(node_el.id,el);
+    };
+
     // update a node
     max_level = 0;
     var update_node = function(el,data,level) {
@@ -236,6 +256,9 @@
         max_level = level || 0;
         var html = render(data,level);
         var node_el = Ext.get(Ext.DomHelper.append(el,html,true));
+        // do this so a get can access the dtaa
+        node_el.id = data.id;
+        node_el.type = data.type;
         node_el.on('dblclick',handle_node_dblclick,node_el,{id:data.id});
         if(el != MAIN_EL()) {
             // move away from focus button
@@ -517,7 +540,7 @@
 
     // show's the edit / new obj form on the page
     var FIELD_TEMPLATE = {
-        'str': new Ext.Template('<label>',
+        'str': new Ext.Template('<label class="{name}">',
                                 '<span class="name">',
                                 '{name}:',
                                 '</span> ',
@@ -542,9 +565,9 @@
         },this);
     };
 
-    var show_node_edit = function(node_type,fields,data) {
+    var show_node_edit = function(node_type,fields,data,container) {
         // get the container
-        var container = Ext.get('form_container');
+        container = container || Ext.get('form_container');
 
         // make room! make room I say !
         container.update('');
@@ -605,13 +628,13 @@
     
     // we want to be able to add a new comment
     // to an existing node
-    var add_comment = function(relative_id) {
+    var add_comment = function(relative_id,el) {
         // first get the fields that a comment can have
         get_node_description('Comment',function(data) {
             // now that we know the fields,
             // put up a form w/ those fields
             var fields = data.fields;
-            show_node_edit('Comment',fields,{'_add_relative':relative_id});
+            show_node_edit('Comment',fields,{'_add_relative':relative_id},el);
         },this);
     };
 
@@ -690,8 +713,10 @@
         }
         .node {
             position: relative;
-            margin-left: 20px;
-            padding: 2.3em 10px 10px 10px;
+            margin-left: 6px;
+            padding: 2.3em 10px .2em 10px;
+        }
+        .node .node_content {
         }
         .node.level_0, .node.none .node.level_1 {
             margin-left: 0;
@@ -727,6 +752,23 @@
         .node.Comment {
 
         }
+        .node > .add_node_comment {
+            position: absolute;
+            bottom: 5px;
+            left: 11px;
+            display: none;
+        }
+        .node.level_0, .node.none .node.level_1 {
+            padding-bottom: 2em;
+        }
+        .node.level_0 > .add_node_comment,
+        .node.none .node.level_1 > .add_node_comment {
+            display:block;
+        }
+        .node.none > .add_node_comment,
+        .node.Author > .add_node_comment {
+            display: none;
+        }
         .relative_node {
             border: 4px solid #cccccc;
             padding: 10px;
@@ -757,11 +799,25 @@
             width: 100;
             float: left;
         }
-        #lvl_filter_button_container > div {
-
+        .inline_comment_container .name {
+            display:none;
         }
-        #lvl_filter_button_container button {
-
+        .inline_comment_container form {
+            padding: 2px;
+            margin-bottom: 0px;
+        }
+        .inline_comment_container form > * {
+            display: inline;
+        }
+        .inline_comment_container br { 
+            display:none;
+        }
+        .inline_comment_container label.title {
+            display: none;
+        }
+        .inline_comment_container textarea {
+            width: 40%;
+            min-width: 400px;
         }
     </style>
 </head>
