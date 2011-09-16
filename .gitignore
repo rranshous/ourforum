@@ -2,3 +2,5 @@
 seen.json
 *.pyc
 /dbs/
+*_creds.txt
+*_log.txt

@@ -6,18 +6,56 @@
 import models as m
 import feedparser
 import time
+import mechanize
+import os
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 class Feeder:
     def __init__(self,url):
         self.url = url
         self.seen = []
         self._populate_seen()
+        self.browser = mechanize.Browser()
+        self.browser.set_handle_robots(False)
+        self.reader_logged_in = False
+
+    def log_into_reader(self):
+        """ logs into google reader """
+
+        if self.reader_logged_in: return True
+
+        print 'logging into google reader'
+
+        # if we are a google reader url make sure
+        # we are logged into google
+        with open(os.path.join(HERE,'reader_creds.txt')) as fh:
+            username = fh.readline().strip()
+            password = fh.readline().strip()
+
+        self.browser.open('https://accounts.google.com/ServiceLoginAuth?continue=http%3A%2F%2Fwww.google.com%2Freader&followup=http%3A%2F%2Fwww.google.com%2Freader&service=reader')
+        forms = list(self.browser.forms())
+        form = forms[0]
+        form['Email'] = username
+        form['Passwd'] = password
+        # submit our form
+        self.browser.open(form.click()) # now we're logged in !
+        self.reader_logged_in = True
+        return True
+
+    def openurl(self, url):
+        """ returns url's html """
+        return self.browser.open(url)
 
     def pull(self):
         """ check the feed for new entries
             and add them as nodes """
+
+        # is it a google reader url?
+        if 'google.com/reader' in self.url and not 'public' in self.url:
+            self.log_into_reader()
+
         # get the current feed
-        feed = feedparser.parse(self.url)
+        feed = feedparser.parse(self.openurl(self.url))
 
         nodes = []
         # go through the entries possibly adding them
