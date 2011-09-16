@@ -35,13 +35,19 @@
     };
 
     // wrap our node's html in something
+    node_container_template = new Ext.Template([
+        '<div class="node {type} level_{level}">',
+            '<div class="node_content">',
+                '{html}',
+        '</div></div>'
+    ]).compile();
+
     var node_container = function(type,level,html) {
         // just wrap the html in a div w/ the node type
         if(Ext.isEmpty(type)) { type = 'none'; }
-        var r  = '<div class="node '+type+' level_'+level+'">';
-        r = r +  '<div class="node_content">';
-        r = r +  html;
-        r = r +  '</div></div>'
+        var r = node_container_template.apply({type:type,
+                                               level:level,
+                                               html:html});
         return r;
     };
 
@@ -283,6 +289,9 @@
     // the first lvl of relative nodes to only the selected
     // type. selecting the second column filters the second
     var update_level_filter_buttons = function() {
+
+        // don't think we need this right now
+        return;
 
         // first we get the types of nodes
         get_node_types(function(types) {
@@ -748,6 +757,12 @@
             width: 100;
             float: left;
         }
+        #lvl_filter_button_container > div {
+
+        }
+        #lvl_filter_button_container button {
+
+        }
     </style>
 </head>
 
@@ -769,12 +784,11 @@
         </button>
     </div>
     <hr/>
-    <div id="filter_button_container">
-    </div>
-    <hr/>
+    <!--
     <div id="lvl_filter_button_container">
     </div>
     <hr/>
+    -->
     <div id="main_el">
     </div>
 </body>
