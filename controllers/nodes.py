@@ -5,70 +5,6 @@ from lib.base import *
 from inspect import isclass
 from decorator import decorator
 
-def fix(nodes_data):
-    # go through all the nodes making sure they have a user
-    # not as their relative (if they have one in the db)
-    # go through the nodes
-    for node_data in nodes_data:
-        # skip user nodes
-        if node_data.get('type') == 'User':
-            continue
-
-        # get the relatives
-        relatives = node_data.get('_relatives')
-
-        # update the rels first
-        if relatives:
-            fix(relatives)
-
-        # check for a user relative
-        users = [x for x in relatives or []
-                   if x.get('type') == 'User']
-
-        if not users:
-            # they don't appear to have user relatives, lets see
-            # what the db has to say about that
-            # TODO: alias column to get to work
-            #user_rel = m.User.query.join('relatives'). \
-            #                        filter(m.Node.id==node_data.get('id')). \
-            #                        all()
-
-            print 'node_data: %s' % node_data
-            user = m.Node.get(node_data.get('id'))
-            user_rels = [r for r in user.relatives if isinstance(r,m.User)]
-
-            # now we know if u have user rels or not
-            for user in user_rels:
-                # add the user nodes data as a relative of the node_data
-                o = user.json_obj()
-                node_data.setdefault('_relatives',[]).append(o)
-
-
-# made this a decorator so that methods which wanted to employ it wouldn't
-# have to add the add_include_user arg
-@decorator
-def always_include_user(f,*args,**kwargs):
-    # grab the flag
-    include_user = int(kwargs.get('always_include_user',1))
-
-    # remove it from the kwargs if it's ther
-    if 'always_include_user' in kwargs:
-        del kwargs['always_include_user']
-
-    # run the function, the result should be json.
-    response = f(*args,**kwargs)
-    data = loads(response)
-
-    # the default is to always include them
-    if include_user:
-        if not isinstance(data,list):
-            fix([data])
-        else:
-            fix(data)
-
-    # return back the new data
-    return dumps(data)
-
 
 class Node(BaseController):
     """ server / edit / create nodes """
@@ -114,9 +50,11 @@ class Node(BaseController):
                 relatives = [r for r in relatives if not r in previous_nodes]
                 if current_depth < depth:
                     # if we are not skipping we filter out nodes from the root
+                    # except users of course
                     if not show_repeats:
                         relatives = [x for x in node.relatives
-                                     if x not in root_nodes]
+                                     if x not in root_nodes or
+                                     isinstance(x,m.User)]
                     if relatives:
                         o['_relatives'] = _lvl(relatives,root_nodes,
                                                current_depth+1,depth,
@@ -141,12 +79,10 @@ class Node(BaseController):
         return to_return
 
     @cherrypy.expose
-    @always_include_user
     def list(self,node_ids,depth):
         return dumps(self.get_data(node_ids,depth))
 
     @cherrypy.expose
-    @always_include_user
     def get(self,node_id,depth):
         return dumps(self.get_data(node_id,depth)[0])
 
@@ -183,7 +119,6 @@ class Node(BaseController):
 
 
     @cherrypy.expose
-    @always_include_user
     def update(self,**kwargs):
         # we are going to update an existing node
         # this can not involve changing it's type (right now)
@@ -217,7 +152,6 @@ class Node(BaseController):
         return dumps(self.get_data([node.id]))
 
     @cherrypy.expose
-    @always_include_user
     def create(self,**kwargs):
         # create a new node, get the node based on the type
         cherrypy.log('type: %s' % kwargs.get('type'))
@@ -253,7 +187,6 @@ class Node(BaseController):
     ## helper methods !
 
     @cherrypy.expose
-    @always_include_user
     def recent(self,count=10,depth=1):
         # query for the most recent nodes
         query = m.session.query(m.Node.id).order_by(m.Node.id.desc())
@@ -264,7 +197,7 @@ class Node(BaseController):
         # pull the id's off the returned tuple
         ids =[i[0] for i in query.all()]
 
-        return dumps(self.get_data(ids,depth,show_repeats=True))
+        return dumps(self.get_data(ids,depth))
 
     @cherrypy.expose
     def describe(self,node_type=None,id=None):

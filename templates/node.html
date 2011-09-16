@@ -156,32 +156,6 @@
 
 
 
-    // try our hand here @ coming up w/ a way of expressing views
-
-    // the first view I know i want shows me the feed entries,
-    // (including the author node for the feed entry), and
-    // the comments for the entry
-    // it would also be nice if I could add in an inline add
-    // comment form which after submission would reload the data
-    // for the node which i added a comment to
-
-    VIEW('feed',{
-        source: {
-            url: '/node/recent',
-            count: 100 // how many recent items do we pull ?
-        },
-        relatives: {
-            // this is the depth of relatives we'll pull
-            depth: 3,
-            filters: [
-                // we want the root relatives to only be feed entries
-                // this should fill our page with feed entries
-                '/FeedEntry',
-            ]
-        }
-    });
-
-
 
     // the main elements on the page we touch
     var MAIN_EL = function() {
@@ -250,7 +224,11 @@
     };
 
     // update a node
+    max_level = 0;
     var update_node = function(el,data,level) {
+        // each recusive loop this will be reset
+        // by the end we'll know the max level
+        max_level = level || 0;
         var html = render(data,level);
         var node_el = Ext.get(Ext.DomHelper.append(el,html,true));
         node_el.on('dblclick',handle_node_dblclick,node_el,{id:data.id});
@@ -262,6 +240,10 @@
         Ext.each(get_relatives(data), function(r) {
             update_node(node_el,r,level+1);
         });
+        // update w/ our next max level
+        if(level == 0) {
+            update_level_filter_buttons();
+        }
     };
 
 
@@ -310,7 +292,7 @@
         },this);
     };
 
-    var update_possible_filters = function(relatives) {
+    var update_possible_filters = function() {
         // request all the types
         get_node_types(update_filter_buttons);
     };
@@ -328,6 +310,82 @@
             },this);
         }
         return relatives;
+    };
+
+
+
+    // this is a map of f[lvl][type] = css_node
+    level_filters = {};
+    var handle_lvl_filter_button = function() {
+        // they want to update the lvl filters!
+        
+        // first check if the lvl exists
+        if(Ext.isEmpty(level_filters[this.level])) {
+            level_filters[this.level] = {};
+        };
+        
+        // now see if there is an entry for this filter
+        if(Ext.isEmpty(level_filters[this.level][this.type])) {
+            // we need to add the filter
+            console.log({level:this.level,type:this.type});
+            var el = Ext.DomHelper.append(Ext.getBody(),{
+                tag: 'style',
+                html: '.node.'+this.type+'.level_'+this.level+' { display: none; }'
+            },this);
+            // add the new filter style to the lookup
+            level_filters[this.level][this.type] = el;
+            this.removeClass('enabled');
+        } else {
+            // the filter exists, remove it
+            level_filters[this.level][this.type].remove()
+            level_filters[this.level][this.type] = undefined;
+            this.addClass('enabled');
+        };
+
+    };
+
+
+    // we want to build a multi lvl filter
+    // there will be N columns w/ one row per type
+    // selecting a type in the first column will filter
+    // the first lvl of relative nodes to only the selected
+    // type. selecting the second column filters the second
+    var update_level_filter_buttons = function() {
+
+        // first we get the types of nodes
+        get_node_types(function(types) {
+            // now that we know all the types, create one 
+            // column for each depth lvl currently showing
+            // to do this we are going to put down divs for each
+            // column to max depth
+            
+            // grab our container
+            var c = Ext.get('lvl_filter_button_container');
+
+            // clear out the old buttons
+            c.update('');
+
+            // now once for each level add the divs
+            for(var i=1; i<=max_level; i++) {
+                var el = Ext.DomHelper.append(c, {
+                    tag: 'div',
+                    cls: 'lvl_filters_'+i
+                },true);
+                // add the buttons
+                Ext.each(types, function(_type) {
+                    // add our button
+                    var button = Ext.DomHelper.append(el,{
+                        tag: 'button',
+                        html: _type,
+                        cls: 'enabled'
+                    },true);
+                    button.level = i;
+                    button.type = _type;
+                    // callback to handle the action, scoped to the button
+                    button.on('click',handle_lvl_filter_button,button);
+                });
+            }
+        });
     };
 
     var _get_relatives = function(rels) {
@@ -791,6 +849,9 @@
     </div>
     <hr/>
     <div id="filter_button_container">
+    </div>
+    <hr/>
+    <div id="lvl_filter_button_container">
     </div>
     <hr/>
     <div id="main_el">
