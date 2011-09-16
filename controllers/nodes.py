@@ -54,17 +54,17 @@ class Node(BaseController):
                     if not show_repeats:
                         relatives = [x for x in node.relatives
                                      if x not in root_nodes or
-                                     isinstance(x,m.User)]
+                                     isinstance(x,m.Author)]
                     if relatives:
                         o['_relatives'] = _lvl(relatives,root_nodes,
                                                current_depth+1,depth,
                                                nodes)
 
                 # if this isn't a user node, fill in it's user rels
-                elif not isinstance(node,m.User):
+                elif not isinstance(node,m.Author):
                     # fill out user relatives even though
                     # that means going beyond depth
-                    user_rels = [u for u in relatives if isinstance(u,m.User)]
+                    user_rels = [u for u in relatives if isinstance(u,m.Author)]
 
                     # muah ?
                     if user_rels:
@@ -190,6 +190,9 @@ class Node(BaseController):
     def recent(self,count=10,depth=1):
         # query for the most recent nodes
         query = m.session.query(m.Node.id).order_by(m.Node.id.desc())
+
+        # the front page should have feed entries, comments
+        # and
 
         # limit to our count
         query = query.limit(count)
