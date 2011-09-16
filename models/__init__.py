@@ -66,6 +66,13 @@ class Node(BaseEntity):
     # nodes can relate to eachother many to many
     relatives = ManyToMany('Node', tablename='relationships')
 
+    # when we we created / updated ?
+    created_at = Field(TIMESTAMP)
+    updated_at = Field(DATETIME)
+
+    # for sorting we want to know when a relation updated last
+    relative_updated_at = Field(DATETIME)
+
 
 class JsonNode(Node):
     """
@@ -213,6 +220,12 @@ class JsonNode(Node):
     def _update_json(self,data):
         """ update the data attribute w/ json for passed data """
         self.data = dumps(data)
+        # update our time stamp
+        now = datetime.datetime.now()
+        self.updated_at = now
+        # update our relatives
+        for r in self.relatives:
+            r.relative_updated_at = now
 
     @staticmethod
     def _json_obj(node):

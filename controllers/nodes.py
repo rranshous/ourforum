@@ -188,19 +188,39 @@ class Node(BaseController):
 
     @cherrypy.expose
     def recent(self,count=10,depth=1):
-        # query for the most recent nodes
-        query = m.session.query(m.Node.id).order_by(m.Node.id.desc())
-
-        # the front page should have feed entries, comments
-        # and
+        # order the nodes so that the most recently updated ones are first
+        # followed by those who most recently had a relative updated
+        query = m.Node.query.order_by(m.Node.updated_at.desc(),
+                                      m.Node.relative_updated_at.desc())
 
         # limit to our count
         query = query.limit(count)
 
-        # pull the id's off the returned tuple
-        ids =[i[0] for i in query.all()]
+        # the front page should not have authors or users
+        # TODO: in query
+        nodes = query.all()
+        nodes = [n for n in nodes if not isinstance(n,(m.User,m.Author))]
 
-        return dumps(self.get_data(ids,depth))
+        # we want to order these such that the newest nodes appear first
+        # but if a node relative (comment) was added to a name
+        # than we want to show the node the comment was added to
+        # but not the comment itself @ root (make sense?)
+
+        # reverse to work backwards
+        rev_nodes = nodes[::-1]
+        seen = []
+        for node in rev_nodes:
+            # since we are working backwards, any node which
+            # was already a relative that we've seen should be skipped
+            if node in seen:
+                nodes.remove(node)
+            else:
+                seen += node.relatives
+
+        # pull the id's off the returned tuple
+        ids = [i.id for i in nodes]
+
+        return dumps(self.get_data(ids,depth,show_repeats=True))
 
     @cherrypy.expose
     def describe(self,node_type=None,id=None):
