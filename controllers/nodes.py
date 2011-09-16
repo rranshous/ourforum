@@ -168,7 +168,7 @@ class Node(BaseController):
         cherrypy.log('node: %s')
 
         # add the current user as a relative for creating it
-        self._modify_relative(node,get_user(),m_add=True)
+        self._modify_relative(node,get_user().get_author(),m_add=True)
 
         # see if it has any relatives
         if '_add_relative' in kwargs:

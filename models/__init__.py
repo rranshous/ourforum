@@ -275,11 +275,18 @@ class User(JsonNode):
         """ returns the author node for this user """
         # the author node for us will be the first author
         # node relative we have.
-        author_node = m.Author.query.join('relatives'). \
-                                     filter(m.User.id == self.id).first()
+        # TODO: don't loop
+        author_node = None
+        for node in self.relatives:
+            if isinstance(node,m.Author):
+                author_node = node
+                break
+
         # if we didn't find one create one
         if not author_node:
-            author_node = m.Author(user=self)
+            author_node = m.Author(user_id=self.id)
+            author_node.relatives.append(self)
+            self.relatives.append(author_node)
 
         return author_node
 
@@ -290,8 +297,24 @@ class User(JsonNode):
             return '<User %s>' % self.id
         return '<User>'
 
-class Author(User):
+class Author(JsonNode):
     """ User who author'd a node """
-    pass
+    user_id = JsonAttribute('')
 
+    # over ride this to return the user
+    # data along w/ our other data
+    @staticmethod
+    def _json_obj(node):
+        if node.data:
+            o = loads(node.data)
+        else:
+            o = {}
+        # update with the user's data
+        if node.user_id:
+            user = m.User.get(node.user_id)
+            o.update(user.json_obj())
+
+        o['id'] = node.id
+        o['type'] = node.__class__.__name__
+        return o
 

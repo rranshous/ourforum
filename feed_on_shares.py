@@ -32,6 +32,6 @@ if __name__ == '__main__':
 
             # on whom did we we feast?
             for mangled_mess in remains:
-                mangled_mess.relatives.append(user)
+                mangled_mess.relatives.append(user.get_author())
 
     m.session.commit()
