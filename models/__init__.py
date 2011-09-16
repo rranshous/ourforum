@@ -271,6 +271,18 @@ class User(JsonNode):
         """ returns back hashed version of password """
         return sha1(p).hexdigest()
 
+    def get_author(self):
+        """ returns the author node for this user """
+        # the author node for us will be the first author
+        # node relative we have.
+        author_node = m.Author.query.join('relatives'). \
+                                     filter(m.User.id == self.id).first()
+        # if we didn't find one create one
+        if not author_node:
+            author_node = m.Author(user=self)
+
+        return author_node
+
     def __repr__(self):
         if self.handle:
             return self.handle
