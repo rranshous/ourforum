@@ -41,7 +41,6 @@ class Node(BaseController):
             if not nodes:
                 return lvl
 
-            cherrypy.log( 'nodes: %s' % [x.id for x in nodes])
             for node in nodes:
                 o = node.json_obj()
                 lvl.append(o)
