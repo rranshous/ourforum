@@ -6,7 +6,7 @@ robby:
  blog: 
  twitter: 
 clint:
- reader:
+ reader: 
 paul:
  reader:
 justin dlc:
@@ -21,3 +21,7 @@ eric:
  reader:
  blog:
  twitter:
+jw:
+ reader: http://www.google.com/reader/atom/user%2F17510929470296678107%2Fstate%2Fcom.google%2Fbroadcast
+will:
+
