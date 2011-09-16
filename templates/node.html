@@ -149,8 +149,8 @@
     ]);
 
     T('Author',[
-        F('handle',bold),
-        F('avatar_url',image('small'))
+        S('@'),
+        F('handle',bold)
     ]);
 
 
@@ -767,26 +767,26 @@
             margin-left: 0;
             border-bottom: 1px solid black;
         }
-        .node.User {
+        .node.Author {
             position: absolute;
             top: .8em;
             left: -5px;
             padding: 0px;
             margin: 0;
         }
-        .node.User > .node {
+        .node.Author > .node {
             display: none;
         }
-        .node.User.level_0 .node.User.level_1 {}
+        .node.Author.level_0 .node.Author.level_1 {}
 
-        .node.User > .node.User {
+        .node.Author > .node.Author {
             position: relative;
             padding: 2em 10px 10px 10px;
             margin-left: 20px;
         }
 
-        .node.User.level_0,
-        .node.none .node.User.level_1
+        .node.Author.level_0,
+        .node.none .node.Author.level_1
          {
             position: relative;
             padding: 2em 10px 10px 10px;
