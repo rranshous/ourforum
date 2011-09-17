@@ -621,7 +621,8 @@
         // add in the submit button
         var button = Ext.DomHelper.append(form,{
             tag:'button',
-            html:'Submit'
+            html:'Submit',
+            style:'margin-top:8px'
         },true);
 
         // add in our click handler for the button
@@ -632,6 +633,17 @@
             // submit the form
             submit_node_update(form);
         },this);
+
+        // and a cancel button
+        var button = Ext.DomHelper.append(form,{
+            tag:'button',
+            html:'cancel'
+        },true);
+        button.on('click',function(e) {
+            e.preventDefault();
+            form.remove();
+        },this);
+
     };
     
     // we want to be able to add a new comment
@@ -690,16 +702,6 @@
                 button.on('click',
                           add_node.createCallback(type));
             });
-            // add the add comment button for this
-            var button = Ext.DomHelper.append(container,{
-                tag: 'button',
-                html: 'Add Comment to this node',
-                class: "add_node relative Comment"
-            },true);
-            // we want to setup a relative for this one
-            button.on('click',function() {
-                add_node("Comment",current_data.id);
-            });
         },this);
     };
 
@@ -728,7 +730,7 @@
         }
         .node.level_0, .node.none .node.level_1 {
             margin-left: 0;
-            border-bottom: 1px solid black;
+            border-bottom: 1px solid #cccccc;
         }
         .node.Author {
             position: absolute;
@@ -763,7 +765,7 @@
         .node > .add_node_comment {
             position: absolute;
             bottom: 5px;
-            left: 11px;
+            left: 9px;
             display: none;
         }
         .node.level_0, .node.none .node.level_1 {
@@ -838,18 +840,19 @@
         </button>
         <input id="search_box" type="text"/>
         <button type="submit" onClick="search(Ext.get('search_box').dom.value);">
-            Search
+            Search 
         </button>
-    </div>
-    <hr/>
-    <div id="form_container">
+        <span style="font-size: 10px; color: grey;">ex: handle:robby</span>
     </div>
     <hr/>
     <div id="node_action_container">
         <div id="add_nodes">Add Node: </div>
+        <hr/>
         <button onClick="edit_current_node();" id="edit_node">
             Edit Current Node
         </button>
+    </div>
+    <div id="form_container">
     </div>
     <hr/>
     <!--
