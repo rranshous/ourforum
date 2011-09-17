@@ -271,13 +271,15 @@ class Node(BaseController):
         # keepin it simple for now
         found = []
 
+        cherrypy.log('search: %s' % s)
+
         # one keyword one value
         if ':' in s:
-            k,v = s.split(';')
-            found += m.Node.get_bys(k=v)
+            k,v = s.split(':')
+            found += m.JsonNode.get_bys(k=v)
 
         # general search
-        found += m.Node.query.filter(m.Node.data.like('%'+s+'%')).all()
+        found += m.Node.query.filter(m.JsonNode.data.like('%'+s+'%')).all()
 
         cherrypy.log('found: %s' % found)
 
