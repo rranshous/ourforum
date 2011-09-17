@@ -12,7 +12,7 @@ class Root(BaseController):
 
     @cherrypy.expose
     def default(self,*args,**kwargs):
-        return render('/node.html');
+        return render('/node.html')
 
 
     @cherrypy.expose

@@ -128,6 +128,22 @@ class JsonNode(Node):
                 return o
         return None
 
+    @classmethod
+    def get_bys(cls,**kwargs):
+        """
+        like get_by for returns list
+        """
+
+        # we are going to search the json data for substrings
+        subs = []
+        filters = []
+        query = cls.query
+        for k,v in kwargs.iteritems():
+            s = dumps({k:v})[1:-1]
+            if hasattr(cls,k):
+                # they want a like
+                query = query.filter(getattr(cls,'data').like('%'+v+'%'))
+        return query.all()
 
     def _update_default_data(self):
         """ since we can't set our data on init we
@@ -243,6 +259,7 @@ class JsonNode(Node):
         for the json obj
         """
         return self._json_obj(self)
+
 
 class FeedEntry(JsonNode):
     """

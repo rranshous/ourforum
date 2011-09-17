@@ -78,11 +78,11 @@ class Node(BaseController):
         return to_return
 
     @cherrypy.expose
-    def list(self,node_ids,depth):
+    def list(self,node_ids,depth=1):
         return dumps(self.get_data(node_ids,depth))
 
     @cherrypy.expose
-    def get(self,node_id,depth):
+    def get(self,node_id,depth=1):
         return dumps(self.get_data(node_id,depth)[0])
 
     def _modify_relative(self,node,relative,m_add=False,m_remove=False):
@@ -265,6 +265,21 @@ class Node(BaseController):
 
 
     @cherrypy.expose
-    def get_pass_hash(self,s=None):
-        """ returns pass hash of arg """
-        return m.User.create_password_hash(s)
+    def search(self,s):
+        """ search for a node """
+
+        # keepin it simple for now
+        found = []
+
+        # one keyword one value
+        if ':' in s:
+            k,v = s.split(';')
+            found += m.Node.get_bys(k=v)
+
+        # general search
+        found += m.Node.query.filter(m.Node.data.like('%'+s+'%')).all()
+
+        cherrypy.log('found: %s' % found)
+
+        return self.list([x.id for x in set(found)])
+

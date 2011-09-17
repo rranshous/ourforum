@@ -412,6 +412,14 @@
         });
     };
 
+    var search = function(s) {
+        Ext.Ajax.request({
+            url:'/node/search/',
+            params: { s:s },
+            success: handle_activate_multi_response
+        });
+    };
+
     // parse the url and return back relevant
     // node id
     var get_node_from_url = function() {
@@ -827,6 +835,10 @@
     <div id="navigation_options">
         <button onClick="load_front_page();">
             Most Recent
+        </button>
+        <input id="search_box" type="text"/>
+        <button type="submit" onClick="search(Ext.get('search_box').dom.value);">
+            Search
         </button>
     </div>
     <hr/>
