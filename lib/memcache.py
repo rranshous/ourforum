@@ -1257,4 +1257,6 @@ if __name__ == "__main__":
     sys.exit(0)
 
 
+default_client = memcache.Client(['127.0.0.1:11211'], debug=0)
+
 # vim: ts=4 sw=4 et :

@@ -4,14 +4,24 @@ from json import dumps, loads
 from lib.base import *
 from inspect import isclass
 from decorator import decorator
-
+from lib.memcache import default_client as memcache_client
 
 class Node(BaseController):
     """ server / edit / create nodes """
 
+    def create_memcache_key(self,node_ids,depth,show_repeats):
+        return '%s_%s_%s' % (','.join(node_ids),depth,show_repeats)
+
     def get_data(self,node_ids,depth=1,show_repeats=False):
         """ return back the json for the nodes,
             and their relative's possibly """
+
+        # check memcache first
+        key = self.create_memcache_key(node_ids,depth,show_repeats)
+        r = memcache_client.get(key)
+        if r:
+            cherrypy.log('memcache hit')
+            return loads(r)
 
         to_return = {}
 
@@ -74,6 +84,9 @@ class Node(BaseController):
 
         nodes = [m.Node.get(n) for n in node_ids]
         to_return = _lvl(nodes,nodes,1,depth)
+
+        # update memcache
+        memcache_client.set(key,dumps(to_return))
 
         return to_return
 
