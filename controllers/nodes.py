@@ -20,7 +20,7 @@ class Node(BaseController):
         key = self.create_memcache_key(node_ids,depth,show_repeats)
         r = memcache_client.get(key)
         if r:
-            cherrypy.log('memcache hit')
+            cherrypy.log('!!!!!!!!! memcache hit')
             return loads(r)
 
         to_return = {}
