@@ -108,9 +108,9 @@ class JsonNode(Node):
             if isinstance(v,JsonAttribute):
                 data[k] = v.default
 
-        # update our data dict from the kwargs
+        # update from our kwargs
         for k,v in kwargs.iteritems():
-            data[k] = v
+            setattr(self,k,v)
 
     @classmethod
     def get_by(cls,**kwargs):
