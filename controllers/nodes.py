@@ -255,6 +255,13 @@ class Node(BaseController):
         # get the fields from the node type
         fields = node_class._json_attribute_dict()
 
+        # we want to include properties
+        for attr in dir(node_class):
+            prop = getattr(node_class,attr)
+            if isinstance(prop,property) and prop.fset:
+                fields[attr] = 'str'
+
+
         # add in our type
         return dumps({'fields':fields,'type':node_class.__name__})
 
