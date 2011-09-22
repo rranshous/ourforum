@@ -10,7 +10,7 @@ class Node(BaseController):
     """ server / edit / create nodes """
 
     def create_memcache_key(self,node_ids,depth,show_repeats):
-        return '%s_%s_%s' % (','.join(node_ids),depth,show_repeats)
+        return '%s_%s_%s' % (','.join(map(str,node_ids)),depth,show_repeats)
 
     def get_data(self,node_ids,depth=1,show_repeats=False):
         """ return back the json for the nodes,
