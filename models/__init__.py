@@ -42,10 +42,21 @@ def setup():
 BaseEntity = Entity
 
 class SetHookDict(dict):
-    def __setitem__(self,k,v):
-        super(SetHookDict,self).__setitem__(k,v)
+    def call_callback(self):
         if hasattr(self,'callback'):
             self.callback(self)
+
+    def __setitem__(self,*args):
+        super(SetHookDict,self).__setitem__(*args)
+        self.call_callback()
+
+    def __delitem__(self,*args):
+        super(SetHookDict,self).__delitem__(*args)
+        self.call_callback()
+
+    def update(self,*args):
+        super(SetHookDict,self).update(*args)
+        self.call_callback()
 
 class JsonAttribute:
     """
