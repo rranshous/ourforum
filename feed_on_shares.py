@@ -3,6 +3,7 @@
 # we are going to feed on some motha f'n feeds!
 #!/usr/bin/python
 
+from lib.memcache import default_client as memcache_client
 import models as m; m.setup()
 
 # who will be feasting tonight ?
@@ -22,6 +23,9 @@ if __name__ == '__main__':
         # for now the feed urls attribute is semi-colon seperated urls
         for url in [u.strip() for u in user.feed_urls.split(';')]:
 
+            if not url:
+                continue
+
             print 'let the feast begin! %s' % url
 
             # get ready
@@ -35,3 +39,4 @@ if __name__ == '__main__':
                 mangled_mess.relatives.append(user.get_author())
 
     m.session.commit()
+    memcache_client.incr('key_counter')

@@ -150,10 +150,10 @@ class JsonNode(Node):
         filters = []
         query = cls.query
         for k,v in kwargs.iteritems():
-            s = dumps({k:v})[1:-1]
-            if hasattr(cls,k):
-                # they want a like
-                query = query.filter(getattr(cls,'data').like('%'+v+'%'))
+            s = dumps({k:v})[2:-2]
+            # they want a like
+            print 's: %s' % s
+            query = query.filter(getattr(cls,'data').like('%'+v+'%'))
         return query.all()
 
     def _update_default_data(self):
@@ -350,10 +350,12 @@ class Author(JsonNode):
             o = loads(node.data)
         else:
             o = {}
+
         # update with the user's data
         if node.user_id:
             user = m.User.get(node.user_id)
-            o.update(user.json_obj())
+            if user:
+                o.update(user.json_obj())
 
         o['id'] = node.id
         o['type'] = node.__class__.__name__

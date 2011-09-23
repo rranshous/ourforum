@@ -1,27 +1,60 @@
 import cherrypy
+import random
 from helpers import render, redirect
 from json import dumps, loads
 from lib.base import *
 from inspect import isclass
 from decorator import decorator
 from lib.memcache import default_client as memcache_client
+from sqlalchemy import event
+
+# we want to make sure and listen on commits, if a commit
+# happens we need to increment the memcache key counter
+def increment_memcache_counter(*args,**kwargs):
+    cherrypy.log('incrementing memcache')
+    memcache_client.incr("key_counter")
+
+# add the listener
+event.listen(m.session, "after_commit", increment_memcache_counter)
+# make sure the counter exists
+r = memcache_client.get('key_counter')
+if not r:
+    memcache_client.set('key_counter',0)
+else:
+    memcache_client.incr('key_counter')
+
+
+@decorator
+def memcache(f, *args, **kwargs):
+    # check if this set of args / kwargs / f is in memcache
+    c = memcache_client.get('key_counter') or 0
+
+    # create our key using function name and args
+    key = '%s_%s_%s_%s' % (c,f.__name__,
+                           '_'.join([str(x) for x in args
+                                     if isinstance(x,(basestring,unicode))]),
+                           '_'.join(['%s.%s' % (x,kwargs[x])
+                                     for x in sorted(kwargs.keys())]))
+
+    # fingers crossed
+    cherrypy.log('memcache key: %s' % key)
+    r = memcache_client.get(key)
+    # miss =/
+    if not r:
+        r = f(*args,**kwargs)
+        # update memcache
+        memcache_client.set(key,r)
+    else:
+        cherrypy.log('memcache hit')
+
+    return r
 
 class Node(BaseController):
     """ server / edit / create nodes """
 
-    def create_memcache_key(self,node_ids,depth,show_repeats):
-        return '%s_%s_%s' % (','.join(map(str,node_ids)),depth,show_repeats)
-
     def get_data(self,node_ids,depth=1,show_repeats=False):
         """ return back the json for the nodes,
             and their relative's possibly """
-
-        # check memcache first
-        key = self.create_memcache_key(node_ids,depth,show_repeats)
-        r = memcache_client.get(key)
-        if r:
-            cherrypy.log('!!!!!!!!! memcache hit')
-            return loads(r)
 
         to_return = {}
 
@@ -85,16 +118,15 @@ class Node(BaseController):
         nodes = [m.Node.get(n) for n in node_ids]
         to_return = _lvl(nodes,nodes,1,depth)
 
-        # update memcache
-        memcache_client.set(key,dumps(to_return))
-
         return to_return
 
     @cherrypy.expose
+    @memcache
     def list(self,node_ids,depth=1):
         return dumps(self.get_data(node_ids,depth))
 
     @cherrypy.expose
+    @memcache
     def get(self,node_id,depth=1):
         return dumps(self.get_data(node_id,depth)[0])
 
@@ -199,6 +231,7 @@ class Node(BaseController):
     ## helper methods !
 
     @cherrypy.expose
+    @memcache
     def recent(self,count=10,depth=1):
         # order the nodes so that the most recently updated ones are first
         # followed by those who most recently had a relative updated
@@ -235,6 +268,7 @@ class Node(BaseController):
         return dumps(self.get_data(ids,depth,show_repeats=True))
 
     @cherrypy.expose
+    @memcache
     def describe(self,node_type=None,id=None):
         # return back a description of the nodes
         # type's fields
@@ -267,6 +301,7 @@ class Node(BaseController):
 
 
     @cherrypy.expose
+    @memcache
     def get_types(self):
         """ returns possible node types """
         types = []
@@ -285,6 +320,7 @@ class Node(BaseController):
 
 
     @cherrypy.expose
+    @memcache
     def search(self,s):
         """ search for a node """
 
@@ -295,11 +331,13 @@ class Node(BaseController):
 
         # one keyword one value
         if ':' in s:
+            cherrypy.log('k/v search')
             k,v = s.split(':')
             found += m.JsonNode.get_bys(k=v)
-
-        # general search
-        found += m.Node.query.filter(m.JsonNode.data.like('%'+s+'%')).all()
+        else:
+            log.debug('general search')
+            # general search
+            found += m.Node.query.filter(m.JsonNode.data.like('%'+s+'%')).all()
 
         cherrypy.log('found: %s' % found)
 
