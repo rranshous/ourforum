@@ -142,6 +142,8 @@
                 case 'small':
                     r += 'width="50px"';
                     break;
+                case 'original':
+                    break
                 default:
                     r += 'width="100"';
             }
@@ -170,6 +172,10 @@
     T('Author',[
         S('@'),
         F('handle',bold)
+    ]);
+
+    T('SexyLady',[
+        F('img_url',image('original'))
     ]);
 
 

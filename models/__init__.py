@@ -361,3 +361,13 @@ class Author(JsonNode):
         o['type'] = node.__class__.__name__
         return o
 
+class SexyLady(JsonNode):
+    """ image(s) of sexy ladies """
+
+    img_url = JsonAttribute('')
+    source_href = JsonAttribute('')
+
+class SexyLadyFeed(JsonNode):
+    url = JsonAttribute('')
+
+

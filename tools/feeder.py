@@ -8,6 +8,8 @@ import feedparser
 import time
 import mechanize
 import os
+from BeautifulSoup import BeautifulSoup as BS
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 class Feeder:
@@ -68,7 +70,10 @@ class Feeder:
             # since we haven't seen it we should
             # add it
             node = self.create_node(entry)
-            nodes.append(node)
+            if isinstance(node,(list,tuple)):
+                nodes += node
+            else:
+                nodes.append(node)
 
             # now note that we've seen it
             self.mark_seen(entry)
@@ -132,3 +137,25 @@ class Feeder:
     def mark_seen(self,entry):
         """ update our seen list """
         self.seen.append(entry.get('id','UNKNOWN'))
+
+
+
+class ImageFeeder(Feeder):
+
+    def create_node(self, entry):
+
+        # pull the body and pull any images
+        soup = BS(entry.get('description',
+                  entry.get('content',
+                  entry.get('summary'))))
+        nodes = []
+        for img in soup.findAll('img'):
+            url = img.get('src')
+            source = img.get('link')
+            print 'adding node for: %s' % url
+            node = m.SexyLady(url=url,
+                              source_href=source)
+            nodes.append(node)
+
+        return nodes
+
