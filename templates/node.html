@@ -128,6 +128,12 @@
         if(Ext.isEmpty(v)) { return ''; }
         return v.replace(new RegExp( "\\n", "g" ),'<br/>');
     }
+    var html_escape = function(v) {
+        return escape(v);
+    };
+    var make_readable = function(v) {
+        return newline_breaks(v);
+    };
     var image = function(size) {
         return (function(v) {
             if(Ext.isEmpty(v)) { return ''; }
@@ -153,7 +159,7 @@
 
     T('Comment',[
         F('title',bold),
-        F('comment',newline_breaks)
+        F('comment',make_readable)
     ]);
 
     T('User',[
