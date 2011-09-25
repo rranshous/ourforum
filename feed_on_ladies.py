@@ -32,5 +32,5 @@ if __name__ == '__main__':
 
             print 'created %s entries' % len(sexies)
 
-    #m.session.commit()
-    #memcache_client.incr('key_counter')
+    m.session.commit()
+    memcache_client.incr('key_counter')
