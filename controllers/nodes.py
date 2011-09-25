@@ -172,12 +172,10 @@ class Node(BaseController):
             error(404)
 
         # update the node from the kwargs
-        updated = { };
         for k,v in kwargs.iteritems():
             if k == 'id': continue
             if hasattr(node,k):
                 setattr(node,k,v)
-                updated[k] = node.get(v)
 
         # see if there are any more tasks
         if '_add_relative' in kwargs:
@@ -295,6 +293,9 @@ class Node(BaseController):
             if isinstance(prop,property) and prop.fset:
                 fields[attr] = 'str'
 
+        # TODO: not make as hackish
+        if m.User == node_class:
+            del fields['password_hash']
 
         # add in our type
         return dumps({'fields':fields,'type':node_class.__name__})
