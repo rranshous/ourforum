@@ -344,3 +344,15 @@ class Node(BaseController):
 
         return self.list([x.id for x in set(found)])
 
+
+    @cherrypy.expose
+    def save_down(self,id):
+        """ save the node's content to the disk """
+
+        node = m.Node.get(id)
+
+        if not node:
+            error(400)
+
+        node.save_down()
+

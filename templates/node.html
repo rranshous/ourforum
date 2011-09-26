@@ -43,6 +43,9 @@
             '<button class="add_node_comment" ',
             'onClick="handle_node_add_comment(Ext.get(this))"',
             '>Add Comment</button>',
+            '<button class="save_node" ',
+            'onClick="handle_save_node(Ext.get(this))"',
+            '>Save Down</button>',
         '</div>'
     ]).compile();
 
@@ -234,6 +237,7 @@
                                      true);
     };
 
+
     var handle_node_dblclick = function(event,target,options) {
         // node: This gets called once for each stacked node
         event.preventDefault();
@@ -263,6 +267,13 @@
         var template = inline_comment_container_template;
         var el = template.append(node_el, {}, true);
         add_comment(node_el.id,el);
+    };
+
+    var handle_save_node = function(el) {
+        var node_el = el.parent('.node');
+        Ext.Ajax.request({
+            url:'/node/save_down/'+node_el.id
+        });
     };
 
     // update a node

@@ -98,6 +98,8 @@ class JsonNode(Node):
     we are relying on sqlalchemy to do the heavy lifting
     """
 
+    save_base = './saved_data/'
+
     def __init__(self,*args,**kwargs):
         """
         setup attributes in the json data for our
@@ -271,6 +273,10 @@ class JsonNode(Node):
         """
         return self._json_obj(self)
 
+    def save_down(self):
+        """ saves a copy of our data to the disk """
+        raise NotImplemented
+
 
 class FeedEntry(JsonNode):
     """
@@ -282,6 +288,23 @@ class FeedEntry(JsonNode):
     body = JsonAttribute('')
     timestamp = JsonAttribute('')
 
+    def save_down(self):
+        """ save down the body as a html file """
+        html = render('/feedentrysavedown.html',
+                      source=self.source,
+                      title=self.title,
+                      body=self.body,
+                      timestamp=self.timestamp)
+        path = os.path.join(self.save_base,
+                            self.__class__.__name__,
+                            '%s(%s).html'%(id,title))
+        print 'saving: %s' % path
+        with open(path,'w') as fh:
+            fh.write(html)
+
+        return path
+
+
 class Comment(JsonNode):
     """
     a comment probably entered through the site
@@ -289,6 +312,20 @@ class Comment(JsonNode):
 
     title = JsonAttribute('')
     comment = JsonAttribute('')
+
+    def save_down(self):
+        """ save down a txt file """
+        html = render('/commentsavedown.html',
+                      title=self.title,
+                      comment=self.comment,
+                      author=self.get_author().get_user().handle)
+        path = os.path.join(self.save_base,
+                            self.__class__,'%s_(%s).html'%(title,self.id))
+        print 'saving: %s' % path
+        with open(path,'w') as fh:
+            fh.write(html)
+        return path
+
 
 class User(JsonNode):
     """
@@ -361,11 +398,24 @@ class Author(JsonNode):
         o['type'] = node.__class__.__name__
         return o
 
+    def get_user(self):
+        return [u for u in self.relatives if isinstance(u,m.User)][0]
+
 class SexyLady(JsonNode):
     """ image(s) of sexy ladies """
 
     img_url = JsonAttribute('')
     source_href = JsonAttribute('')
+
+    def save_down(self):
+        ext = self.img_url.split('.')[-1]
+        name = self.img_url.split('.')[-2]
+        path = os.path.join(self.save_base,
+                            self.__class__,'%s_(%s).%s'%(name,self.id,ext))
+        print 'saving: %s' % path
+        with open(path,'w') as fh:
+            fh.write(urlopen(self.img_url).read())
+        return path
 
 class SexyLadyFeed(JsonNode):
     url = JsonAttribute('')

@@ -153,7 +153,7 @@ class ImageFeeder(Feeder):
             url = img.get('src')
             source = img.get('link')
             print 'adding node for: %s' % url
-            node = m.SexyLady(url=url,
+            node = m.SexyLady(img_url=url,
                               source_href=source)
             nodes.append(node)
 
