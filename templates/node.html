@@ -245,6 +245,7 @@
     var handle_node_content_click = function(el) {
         // when the node content is clicked, if it is summarized expand
         el = Ext.get(el);
+        console.log({handle_node_content_click:el});
         if(!el.hasClass('no_summary')) {
             el.addClass('no_summary');
         }
@@ -889,12 +890,17 @@
 
         ## setup the rules for showing the node content
         ## as a summary / showing the expand link
-        .node.FeedEntry .node_content,
-        .node.Comment .node_content {
-            max-height: 105px;
+        .node.level_0.FeedEntry .node_content,
+        .node.level_0.Comment .node_content,
+        .node.none.level_0 .node.level_1.FeedEntry .node_content,
+        .node.none.level_0 .node.level_1.Comment .node_content {
+            max-height: 100px;
             overflow: hidden;
         }
-        .node.FeedEntry .node_content img {
+        .node.level_0.FeedEntry .node_content img,
+        .node.level_0.Comment .node_content img,
+        .node.none.level_0 .node.level_1.FeedEntry .node_content img,
+        .node.none.level_0 .node.level_1.Comment .node_content img {
             width: 50px;
             float:left;
         }
@@ -910,12 +916,12 @@
             color: blue;
             text-decoration: underline;
         }
-        .node .node_content.no_summary {
-            max-height: none;
+        .node_content.no_summary {
+            max-height: none !important;
         }
-        .node .node_content.no_summary img {
-            float: none;
-            width: auto;
+        .node_content.no_summary img {
+            float: none !important;
+            width: auto !important;
         }
             
 
