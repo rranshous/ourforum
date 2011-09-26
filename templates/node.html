@@ -37,10 +37,13 @@
     // wrap our node's html in something
     node_container_template = new Ext.Template([
         '<div class="node {type} level_{level}">',
-            '<div class="node_content">',
+            '<div onClick="handle_node_content_click(this); return false;"',
+            ' class="node_content">',
                 '{html}',
             '</div>',
-            '<button class="add_node_comment" ',
+            //'<span onClick="handle_unsumarize(this); return false;"',
+            //' class="unsumarize node_action">Expand</span>',
+            '<button class="add_node_comment node_action" ',
             'onClick="handle_node_add_comment(Ext.get(this))"',
             '>Add Comment</button>',
             //'<button class="save_node" ',
@@ -190,6 +193,8 @@
 
 
 
+
+
     // the main elements on the page we touch
     var MAIN_EL = function() {
         return Ext.get('main_el');
@@ -237,6 +242,21 @@
                                      true);
     };
 
+    var handle_node_content_click = function(el) {
+        // when the node content is clicked, if it is summarized expand
+        el = Ext.get(el);
+        if(!el.hasClass('no_summary')) {
+            el.addClass('no_summary');
+        }
+    };
+
+    var handle_unsumarize = function(el) {
+        // we want to remove the summary class from the node content
+        console.log('removing summary')
+        Ext.get(el).parent('.node').child('.node_content').addClass('no_summary');
+        // remove expand link
+        Ext.get(el).remove();
+    };
 
     var handle_node_dblclick = function(event,target,options) {
         // node: This gets called once for each stacked node
@@ -861,6 +881,42 @@
             width: 40%;
             min-width: 400px;
         }
+
+
+        ## setup the rules for showing the node content
+        ## as a summary / showing the expand link
+        .node.FeedEntry .node_content,
+        .node.Comment .node_content {
+            max-height: 105px;
+            overflow: hidden;
+        }
+        .node.FeedEntry .node_content img {
+            width: 50px;
+            float:left;
+        }
+        ## hide the expand button except for feeds / comments
+        .unsumarize {
+            display: none;
+            float: right;
+            cursor: pointer;
+        }
+        .node.FeedEntry > .unsumarize,
+        .node.Comment > .unsumarize {
+            display: inline;
+            color: blue;
+            text-decoration: underline;
+        }
+        .node .node_content.no_summary {
+            max-height: none;
+        }
+        .node .node_content.no_summary img {
+            float: none;
+            width: auto;
+        }
+            
+
+
+
     </style>
 </head>
 
