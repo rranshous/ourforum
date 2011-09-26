@@ -41,8 +41,8 @@
             ' class="node_content">',
                 '{html}',
             '</div>',
-            //'<span onClick="handle_unsumarize(this); return false;"',
-            //' class="unsumarize node_action">Expand</span>',
+            '<div onClick="handle_unsumarize(this); return false;"',
+            ' class="unsumarize node_action">Expand this item >></div>',
             '<button class="add_node_comment node_action" ',
             'onClick="handle_node_add_comment(Ext.get(this))"',
             '>Add Comment</button>',
@@ -247,7 +247,7 @@
         el = Ext.get(el);
         console.log({handle_node_content_click:el});
         if(!el.hasClass('no_summary')) {
-            el.addClass('no_summary');
+            handle_unsumarize(el.parent('.node').child('.unsumarize'));
         }
     };
 
@@ -310,7 +310,7 @@
         node_el.type = data.type;
         // if the node's content is not scrollable add the no_summary class
         if(!node_el.child('.node_content').isScrollable()) {
-            node_el.child('.node_content').addClass('no_summary')
+            handle_unsumarize(node_el.child('.unsumarize'));
         };
         node_el.on('dblclick',handle_node_dblclick,node_el,{id:data.id});
         if(el != MAIN_EL()) {
@@ -894,7 +894,7 @@
         .node.level_0.Comment .node_content,
         .node.none.level_0 .node.level_1.FeedEntry .node_content,
         .node.none.level_0 .node.level_1.Comment .node_content {
-            max-height: 100px;
+            max-height: 120px;
             overflow: hidden;
         }
         .node.level_0.FeedEntry .node_content img,
@@ -907,15 +907,17 @@
         ## hide the expand button except for feeds / comments
         .unsumarize {
             display: none;
-            float: right;
             cursor: pointer;
         }
-        .node.FeedEntry > .unsumarize,
-        .node.Comment > .unsumarize {
-            display: inline;
+        .node.level_0.FeedEntry .unsumarize,
+        .node.level_0.Comment  .unsumarize,
+        .node.none.level_0 .node.level_1.FeedEntry .unsumarize,
+        .node.none.level_0 .node.level_1.Comment .unsumarize {
+            display: block;
             color: blue;
             text-decoration: underline;
         }
+        ## when we are a summary show only a little
         .node_content.no_summary {
             max-height: none !important;
         }
