@@ -307,6 +307,10 @@
         // do this so a get can access the dtaa
         node_el.id = data.id;
         node_el.type = data.type;
+        // if the node's content is not scrollable add the no_summary class
+        if(!node_el.child('.node_content').isScrollable()) {
+            node_el.child('.node_content').addClass('no_summary')
+        };
         node_el.on('dblclick',handle_node_dblclick,node_el,{id:data.id});
         if(el != MAIN_EL()) {
             // move away from focus button
