@@ -43,9 +43,9 @@
             '<button class="add_node_comment" ',
             'onClick="handle_node_add_comment(Ext.get(this))"',
             '>Add Comment</button>',
-            '<button class="save_node" ',
-            'onClick="handle_save_node(Ext.get(this))"',
-            '>Save Down</button>',
+            //'<button class="save_node" ',
+            //'onClick="handle_save_node(Ext.get(this))"',
+            //'>Save Down</button>',
         '</div>'
     ]).compile();
 
@@ -395,6 +395,7 @@
 
     // set the handler for when the page state changes
     window.onpopstate = function(event) {
+        console.log('pop state handler');
         console.log({'pop_state':event});
 
         // grab the previous state's data
@@ -404,7 +405,7 @@
         if(data && data.id) {
             load_node_data(data.id);
         } else {
-            load_front_page();
+            //load_front_page();
         }
     };
 
@@ -434,6 +435,7 @@
     var load_front_page = function(count) {
         var front_page_count = count || 100;
         var depth = 3;
+        console.log('loading front page');
         Ext.Ajax.request({
             url:'/node/recent/'+front_page_count+'/'+depth,
             success: handle_activate_multi_response
@@ -544,8 +546,10 @@
     // for the current id
     var refresh_page_data = function(form) {
         if(Ext.isEmpty(last_data.id)) {
+            console.log('refresh page data front page');
             load_front_page();
         } else {
+            console.log('activating last node');
             activate_node(last_data.id);
         }
     };
