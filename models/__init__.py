@@ -6,6 +6,8 @@ import models as m
 import os
 import random
 from json import dumps, loads
+from urllib2 import urlopen
+from helpers import render
 
 
 TYPE_LOOKUP = {'unicode':'str',
@@ -277,6 +279,13 @@ class JsonNode(Node):
         """ saves a copy of our data to the disk """
         raise NotImplemented
 
+    def get_author(self):
+        """ if there is an author node related to this
+            return it or None """
+        authors = [a for a in self.relatives if isinstance(a,m.Author)]
+        if authors:
+            return authors[0]
+        return None
 
 class FeedEntry(JsonNode):
     """
@@ -295,9 +304,10 @@ class FeedEntry(JsonNode):
                       title=self.title,
                       body=self.body,
                       timestamp=self.timestamp)
+        title = self.title.replace(os.sep,'')
         path = os.path.join(self.save_base,
                             self.__class__.__name__,
-                            '%s(%s).html'%(id,title))
+                            '%s(%s).html'%(title,self.id))
         print 'saving: %s' % path
         with open(path,'w') as fh:
             fh.write(html)
@@ -315,12 +325,14 @@ class Comment(JsonNode):
 
     def save_down(self):
         """ save down a txt file """
-        html = render('/commentsavedown.html',
+        html = render('/commentsavedown.txt',
                       title=self.title,
                       comment=self.comment,
                       author=self.get_author().get_user().handle)
+        name = (self.title or self.comment).replace(os.sep,'')
         path = os.path.join(self.save_base,
-                            self.__class__,'%s_(%s).html'%(title,self.id))
+                            self.__class__.__name__,
+                            '%s_(%s).html'%(name,self.id))
         print 'saving: %s' % path
         with open(path,'w') as fh:
             fh.write(html)
@@ -409,9 +421,11 @@ class SexyLady(JsonNode):
 
     def save_down(self):
         ext = self.img_url.split('.')[-1]
-        name = self.img_url.split('.')[-2]
+        name = self.img_url.split('.')[-2].split('/')[-1]
+        name = name.replace(os.sep,'')
         path = os.path.join(self.save_base,
-                            self.__class__,'%s_(%s).%s'%(name,self.id,ext))
+                            self.__class__.__name__,
+                            '%s_(%s).%s'%(name,self.id,ext))
         print 'saving: %s' % path
         with open(path,'w') as fh:
             fh.write(urlopen(self.img_url).read())

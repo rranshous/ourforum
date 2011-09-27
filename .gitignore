@@ -4,3 +4,4 @@ seen.json
 /dbs/
 *_creds.txt
 *_log.txt
+/saved_data

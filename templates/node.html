@@ -43,12 +43,14 @@
             '</div>',
             '<div onClick="handle_unsumarize(this); return false;"',
             ' class="unsumarize node_action">Expand this item >></div>',
-            '<button class="add_node_comment node_action" ',
-            'onClick="handle_node_add_comment(Ext.get(this))"',
-            '>Add Comment</button>',
-            //'<button class="save_node" ',
-            //'onClick="handle_save_node(Ext.get(this))"',
-            //'>Save Down</button>',
+            '<div class="action_buttons">',
+                '<button class="add_node_comment node_action" ',
+                'onClick="handle_node_add_comment(Ext.get(this))"',
+                '>Add Comment</button>',
+                '<button class="save_node" ',
+                'onClick="handle_save_node(Ext.get(this))"',
+                '>Save Down</button>',
+            '</div>',
         '</div>'
     ]).compile();
 
@@ -253,7 +255,6 @@
 
     var handle_unsumarize = function(el) {
         // we want to remove the summary class from the node content
-        console.log('removing summary')
         Ext.get(el).parent('.node').child('.node_content').addClass('no_summary');
         // remove expand link
         Ext.get(el).remove();
@@ -820,7 +821,7 @@
         .node.Comment {
 
         }
-        .node > .add_node_comment {
+        .node > .action_buttons {
             position: absolute;
             bottom: 5px;
             left: 9px;
@@ -829,12 +830,12 @@
         .node.level_0, .node.none .node.level_1 {
             padding-bottom: 2em;
         }
-        .node.level_0 > .add_node_comment,
-        .node.none .node.level_1 > .add_node_comment {
+        .node.level_0 > .action_buttons,
+        .node.none .node.level_1 > .action_buttons {
             display:block;
         }
-        .node.none > .add_node_comment,
-        .node.Author > .add_node_comment {
+        .node.none > .action_buttons,
+        .node.Author > .action_buttons {
             display: none;
         }
         .relative_node {
