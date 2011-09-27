@@ -342,6 +342,10 @@ class Node(BaseController):
         if ':' in s:
             cherrypy.log('k/v search')
             k,v = s.split(':')
+            if k.lower() == 'type':
+                cls = getattr(m,v)
+                if cls:
+                    found += cls.query.all()
             found += m.JsonNode.get_bys(k=v)
         else:
             log.debug('general search')
