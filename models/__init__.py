@@ -86,6 +86,22 @@ class Node(BaseEntity):
     # for sorting we want to know when a relation updated last
     relative_updated_at = Field(DATETIME)
 
+    @classmethod
+    def _get_relatives(cls,node,depth=1,d=0):
+        if d >= depth:
+            return []
+        deep_rels = []
+        rels = [n for n in node.relatives
+                if not isinstance(n,(m.User,m.Author))]
+        for rel in rels:
+            deep_rels += cls._get_relatives(rel,depth,d+1)
+        return node.relatives + deep_rels
+
+    def get_relatives(self,depth=1):
+        """ returns a flat list of relatives (and rels of rels """
+        return self._get_relatives(self,depth,0)
+
+
     def get_author(self):
         """ if there is an author node related to this
             return it or None """

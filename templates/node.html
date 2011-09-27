@@ -310,7 +310,9 @@
         node_el.id = data.id;
         node_el.type = data.type;
         // if the node's content is not scrollable add the no_summary class
-        if(!node_el.child('.node_content').isScrollable()) {
+        // or if the type is comment
+        if(!node_el.child('.node_content').isScrollable() ||
+           node_el.type == 'Comment') {
             handle_unsumarize(node_el.child('.unsumarize'));
         };
         node_el.on('dblclick',handle_node_dblclick,node_el,{id:data.id});

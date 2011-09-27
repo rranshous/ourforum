@@ -234,7 +234,8 @@ class Node(BaseController):
         # order the nodes so that the most recently updated ones are first
         # followed by those who most recently had a relative updated
         query = m.Node.query.order_by(m.Node.updated_at.desc(),
-                                      m.Node.relative_updated_at.desc())
+                                      m.Node.relative_updated_at.desc(),
+                                      m.Node.id.desc())
 
         # limit to our count
         query = query.limit(count)
@@ -242,35 +243,33 @@ class Node(BaseController):
         # the front page should not have authors or users
         # TODO: in query
         nodes = query.all()
-        nodes = [n for n in nodes if not isinstance(n,(m.User,m.Author))]
+        filter_types = (m.User,m.Author,m.SexyLady)
+        nodes = [n for n in nodes if not isinstance(n,filter_types)]
+        # make sure depth is a #
+        depth = int(depth)
 
         # we want to order these such that the newest nodes appear first
         # but if a node relative (comment) was added to a name
         # than we want to show the node the comment was added to
         # but not the comment itself @ root (make sense?)
 
-        """
-        not woring
-        def flat_rels(node,rels,d):
-            if d >= depth:
-                print 'at depth'
-                return
-            rels += node.relatives
-            for relative in node.relatives:
-                if relative in seen or relative in nodes:
-                    continue
-                flat_rels(relative,rels,d+1)
-        """
         # reverse to work backwards
         rev_nodes = nodes[::-1]
         seen = []
-        for node in rev_nodes:
-            # since we are working backwards, any node which
-            # was already a relative that we've seen should be skipped
-            if node in seen:
-                nodes.remove(node)
-            else:
-                seen += node.relatives
+        try:
+            for node in rev_nodes:
+                # since we are working backwards, any node which
+                # was already a relative that we've seen should be skipped
+                print 'node:',node.id
+                if node in seen:
+                    print 'removing:',node.id
+                    nodes.remove(node)
+                else:
+                    rels = node.get_relatives(depth)
+                    print 'adding:',[x.id for x in rels]
+                    seen += rels
+        except Exception, ex:
+            print 'fail: ',ex
 
         # pull the id's off the returned tuple
         ids = [i.id for i in nodes]
