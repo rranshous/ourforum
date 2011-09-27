@@ -236,8 +236,8 @@ class Node(BaseController):
     def recent(self,count=10,depth=1):
         # order the nodes so that the most recently updated ones are first
         # followed by those who most recently had a relative updated
-        query = m.Node.query.order_by(m.Node.updated_at.desc(),
-                                      m.Node.relative_updated_at.desc(),
+        query = m.Node.query.order_by(m.Node.relative_updated_at.desc(),
+                                      m.Node.updated_at.desc(),
                                       m.Node.id.desc())
 
         # limit to our count
