@@ -7,6 +7,7 @@ from inspect import isclass
 from decorator import decorator
 from lib.memcache import default_client as memcache_client
 from sqlalchemy import event
+import zlib
 
 # we want to make sure and listen on commits, if a commit
 # happens we need to increment the memcache key counter
@@ -43,8 +44,12 @@ def memcache(f, *args, **kwargs):
     if not r:
         r = f(*args,**kwargs)
         # update memcache
-        memcache_client.set(key,r)
+        cr = zlib.compress(r)
+        cherrypy.log('writing compressed to memcache %s:%s'
+                     % (len(r),len(cr)))
+        memcache_client.set(key,cr)
     else:
+        r = zlib.decompress(r)
         cherrypy.log('memcache hit')
 
     return r
