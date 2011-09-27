@@ -44,12 +44,16 @@
             '<div onClick="handle_unsumarize(this); return false;"',
             ' class="unsumarize node_action">Expand this item >></div>',
             '<div class="action_buttons">',
+                '-',
                 '<button class="add_node_comment node_action" ',
                 'onClick="handle_node_add_comment(Ext.get(this))"',
                 '>Add Comment</button>',
                 '<button class="save_node" ',
                 'onClick="handle_save_node(Ext.get(this))"',
                 '>Save Down</button>',
+                '<button class="focus" ',
+                'onClick="handle_focus_node(this);return false;"',
+                '>Focus</button>',
             '</div>',
         '</div>'
     ]).compile();
@@ -221,19 +225,6 @@
         return Ext.get('relative_container');
     }
 
-    // adds a focus clickable to each node
-    var append_focus_button = function(el,data) {
-        var b = Ext.DomHelper.append(el,{ tag:'a', 
-                                          href:'#',
-                                          html:'focus',
-                                          cls:'focus'},
-                                     true);
-        b.on('click',function(event) { 
-            event.preventDefault();
-            activate_node(data.id);
-        });
-    };
-
 
     // appends a link to add a comment node
     var append_comment_button = function(el,data) {
@@ -260,24 +251,6 @@
         Ext.get(el).remove();
     };
 
-    var handle_node_dblclick = function(event,target,options) {
-        // node: This gets called once for each stacked node
-        event.preventDefault();
-
-        // see if our node is actually what was clicked on
-        var node_target = Ext.get(event.getTarget('.node'));
-        if(node_target != this) {
-            // they didn't click on us =/
-            return;
-        }
-
-        console.log('node dbl click');
-
-        // make sure they didn't click a link
-
-        // update view to this node
-        activate_node(options.id);
-    };
 
     inline_comment_container_template = new Ext.Template([
         '<div class="inline_comment_container"></div>'
@@ -289,6 +262,13 @@
         var template = inline_comment_container_template;
         var el = template.append(node_el, {}, true);
         add_comment(node_el.id,el);
+    };
+
+    var handle_focus_node = function(el) {
+        // button was clicked
+        el = Ext.get(el);
+        var node_el = el.parent('.node');
+        activate_node(node_el.id);
     };
 
     var handle_save_node = function(el) {
@@ -315,11 +295,6 @@
            node_el.type == 'Comment') {
             handle_unsumarize(node_el.child('.unsumarize'));
         };
-        node_el.on('dblclick',handle_node_dblclick,node_el,{id:data.id});
-        if(el != MAIN_EL()) {
-            // move away from focus button
-            //append_focus_button(node_el,data);
-        }
         // render in the relatives
         Ext.each(get_relatives(data), function(r) {
             update_node(node_el,r,level+1);
@@ -784,7 +759,7 @@
         .node {
             position: relative;
             margin-left: 6px;
-            padding: 2em 10px 1.5em 10px;
+            padding: 2em 10px 2px 10px;
         }
         .node .node_content {
         }
@@ -824,17 +799,15 @@
 
         }
         .node > .action_buttons {
-            position: absolute;
-            bottom: 3px;
-            left: 7px;
+            color: gray;
         }
         .node > .action_buttons > button {
             background: transparent;
             border: none;
-            color: gray;
             padding: 0;
             margin: 0;
             cursor: pointer;
+            color: gray;
         }
         .node.level_0, .node.none .node.level_1 {
             padding-bottom: 2em;
@@ -859,11 +832,6 @@
         }
         button.enabled {
             border: 1px solid black;
-        }
-        .focus {
-            position: absolute;
-            top: 5px;
-            right: 5px;
         }
         #navigation_container {
             padding: 0;
