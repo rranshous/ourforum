@@ -460,7 +460,7 @@
 
     var load_front_page = function(count) {
         var front_page_count = count || 100;
-        var depth = 3;
+        var depth = 5;
         console.log('loading front page');
         Ext.Ajax.request({
             url:'/node/recent/'+front_page_count+'/'+depth,

@@ -86,6 +86,33 @@ class Node(BaseEntity):
     # for sorting we want to know when a relation updated last
     relative_updated_at = Field(DATETIME)
 
+    def get_author(self):
+        """ if there is an author node related to this
+            return it or None """
+        authors = [a for a in self.relatives if isinstance(a,m.Author)]
+        if authors:
+            return authors[0]
+        return None
+
+    def save_down(self,html=None,txt=None):
+        """ will save down a file to disk """
+
+        # determine the path
+        save_path = self.get_save_path()
+
+        # render it
+        if html:
+            out = render('/htmlnode.html',source=html,
+                                          node=self)
+        if txt:
+            out = render('/textnode.html',source=txt,
+                                          node=self)
+
+        # write it to disk
+        with codec.open(save_path,'w') as fh:
+            fh.write(out)
+
+        return save_path
 
 class JsonNode(Node):
     """
@@ -275,17 +302,6 @@ class JsonNode(Node):
         """
         return self._json_obj(self)
 
-    def save_down(self):
-        """ saves a copy of our data to the disk """
-        raise NotImplemented
-
-    def get_author(self):
-        """ if there is an author node related to this
-            return it or None """
-        authors = [a for a in self.relatives if isinstance(a,m.Author)]
-        if authors:
-            return authors[0]
-        return None
 
 class FeedEntry(JsonNode):
     """
@@ -304,13 +320,17 @@ class FeedEntry(JsonNode):
                       title=self.title,
                       body=self.body,
                       timestamp=self.timestamp)
+        path = self.get_save_path()
+        print 'saving: %s' % path
+        with open(path,'w') as fh:
+            fh.write(html)
+        return path
+
+    def get_save_path(self):
         title = self.title.replace(os.sep,'')
         path = os.path.join(self.save_base,
                             self.__class__.__name__,
                             '%s(%s).html'%(title,self.id))
-        print 'saving: %s' % path
-        with open(path,'w') as fh:
-            fh.write(html)
 
         return path
 
@@ -329,13 +349,17 @@ class Comment(JsonNode):
                       title=self.title,
                       comment=self.comment,
                       author=self.get_author().get_user().handle)
+        path = self.get_save_path()
+        print 'saving: %s' % path
+        with open(path,'w') as fh:
+            fh.write(html)
+        return path
+
+    def get_save_path(self):
         name = (self.title or self.comment).replace(os.sep,'')
         path = os.path.join(self.save_base,
                             self.__class__.__name__,
                             '%s_(%s).html'%(name,self.id))
-        print 'saving: %s' % path
-        with open(path,'w') as fh:
-            fh.write(html)
         return path
 
 
@@ -420,15 +444,24 @@ class SexyLady(JsonNode):
     source_href = JsonAttribute('')
 
     def save_down(self):
+        # determine the path
+        save_path = self.get_save_path()
+
+        print 'saving: %s' % save_path
+
+        # write it to disk
+        with open(save_path,'w') as fh:
+            fh.write(urlopen(self.img_url).read())
+
+        return save_path
+
+    def get_save_path(self):
         ext = self.img_url.split('.')[-1]
         name = self.img_url.split('.')[-2].split('/')[-1]
         name = name.replace(os.sep,'')
         path = os.path.join(self.save_base,
                             self.__class__.__name__,
                             '%s_(%s).%s'%(name,self.id,ext))
-        print 'saving: %s' % path
-        with open(path,'w') as fh:
-            fh.write(urlopen(self.img_url).read())
         return path
 
 class SexyLadyFeed(JsonNode):

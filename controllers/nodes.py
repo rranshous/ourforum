@@ -249,6 +249,18 @@ class Node(BaseController):
         # than we want to show the node the comment was added to
         # but not the comment itself @ root (make sense?)
 
+        """
+        not woring
+        def flat_rels(node,rels,d):
+            if d >= depth:
+                print 'at depth'
+                return
+            rels += node.relatives
+            for relative in node.relatives:
+                if relative in seen or relative in nodes:
+                    continue
+                flat_rels(relative,rels,d+1)
+        """
         # reverse to work backwards
         rev_nodes = nodes[::-1]
         seen = []
