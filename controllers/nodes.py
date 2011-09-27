@@ -89,7 +89,8 @@ class Node(BaseController):
                 lvl.append(o)
                 relatives = node.relatives
                 # don't wanna go a > b > a
-                relatives = [r for r in relatives if not r in previous_nodes]
+                relatives = [r for r in relatives
+                             if not r in previous_nodes or isinstance(r,m.Author)]
                 if current_depth < depth:
                     # if we are not skipping we filter out nodes from the root
                     # except users of course
@@ -102,16 +103,13 @@ class Node(BaseController):
                                                current_depth+1,depth,
                                                nodes)
 
-                # if this isn't a user node, fill in it's user rels
+                # if this isn't a user node, fill in it's author
                 elif not isinstance(node,m.Author):
-                    # fill out user relatives even though
-                    # that means going beyond depth
-                    user_rels = [u for u in relatives if isinstance(u,m.Author)]
-
-                    # muah ?
-                    if user_rels:
-                        o['_relatives'] = [user_rels[0].json_obj()]
-
+                    author = node.get_author()
+                    if author:
+                        o['_relatives'] = [author.json_obj()]
+                    else:
+                        cherrypy.log('No Author!: %s' % node.id)
 
             return lvl
 
@@ -256,20 +254,14 @@ class Node(BaseController):
         # reverse to work backwards
         rev_nodes = nodes[::-1]
         seen = []
-        try:
-            for node in rev_nodes:
-                # since we are working backwards, any node which
-                # was already a relative that we've seen should be skipped
-                print 'node:',node.id
-                if node in seen:
-                    print 'removing:',node.id
-                    nodes.remove(node)
-                else:
-                    rels = node.get_relatives(depth)
-                    print 'adding:',[x.id for x in rels]
-                    seen += rels
-        except Exception, ex:
-            print 'fail: ',ex
+        for node in rev_nodes:
+            # since we are working backwards, any node which
+            # was already a relative that we've seen should be skipped
+            if node in seen:
+                nodes.remove(node)
+            else:
+                rels = node.get_relatives(depth)
+                seen += rels
 
         # pull the id's off the returned tuple
         ids = [i.id for i in nodes]
