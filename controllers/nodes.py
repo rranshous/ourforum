@@ -24,6 +24,18 @@ if not r:
 else:
     memcache_client.incr('key_counter')
 
+def node_most_recent_relative_update(node_datas):
+    # go down through the relatives, find the newest one
+    def c(nds):
+        newest = nds.get('epoch_updated_at')
+        for node_data in nds.get('_relatives',[]):
+            f = c(node_data)
+            if f > newest:
+                newest = f
+        return newest
+    newest = c(node_datas)
+    print 'newest: %s' % newest
+    return -newest
 
 @decorator
 def memcache(f, *args, **kwargs):
@@ -271,7 +283,15 @@ class Node(BaseController):
         # pull the id's off the returned tuple
         ids = [i.id for i in nodes][:int(count)]
 
-        return dumps(self.get_data(ids,depth,show_repeats=True))
+        # get dicts of data
+        data = self.get_data(ids,depth,show_repeats=True)
+
+        # sort the data by most recently updated relative
+        # I know this is attrocious. should be doing this
+        # in sql
+        data.sort(key=node_most_recent_relative_update)
+
+        return dumps(data)
 
     @cherrypy.expose
     @memcache

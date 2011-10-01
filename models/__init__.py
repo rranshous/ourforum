@@ -6,6 +6,7 @@ import models as m
 import os
 import random
 from json import dumps, loads
+import time
 from urllib2 import urlopen
 from helpers import render
 
@@ -310,6 +311,7 @@ class JsonNode(Node):
         o['id'] = node.id
         o['type'] = node.__class__.__name__
         o['updated_at'] = node.updated_at.strftime('%m/%d/%y %H:%M')
+        o['epoch_updated_at'] = int(time.mktime(node.updated_at.timetuple()))
         return o
 
     def json_obj(self):
