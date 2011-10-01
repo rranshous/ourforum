@@ -132,11 +132,11 @@ class Feeder:
     def has_seen(self,entry):
         """ return True if we've already
             processed the node """
-        return entry.get('id','UNKNOWN') in self.seen
+        return entry.get('id',entry.get('guid','UNKNOWN')) in self.seen
 
     def mark_seen(self,entry):
         """ update our seen list """
-        self.seen.append(entry.get('id','UNKNOWN'))
+        self.seen.append(entry.get('id',entry.get('guid','UNKNOWN')))
 
 
 
@@ -158,4 +158,13 @@ class ImageFeeder(Feeder):
             nodes.append(node)
 
         return nodes
+
+    def has_seen(self,entry):
+        """ return True if we've already
+            processed the node """
+        return entry.get('guid','UNKNOWN') in self.seen
+
+    def mark_seen(self,entry):
+        """ update our seen list """
+        self.seen.append(entry.get('guid','UNKNOWN'))
 
