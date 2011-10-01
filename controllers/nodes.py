@@ -34,7 +34,6 @@ def node_most_recent_relative_update(node_datas):
                 newest = f
         return newest
     newest = c(node_datas)
-    print 'newest: %s' % newest
     return -newest
 
 @decorator
