@@ -96,7 +96,7 @@ class Node(BaseController):
                 # don't wanna go a > b > a
                 relatives = [r for r in relatives
                              if not r in previous_nodes or isinstance(r,m.Author)]
-                if current_depth < depth:
+                if current_depth < depth and not isinstance(node,m.Author):
                     # if we are not skipping we filter out nodes from the root
                     # except users of course
                     if not show_repeats:

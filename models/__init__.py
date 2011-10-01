@@ -309,6 +309,7 @@ class JsonNode(Node):
             o = {}
         o['id'] = node.id
         o['type'] = node.__class__.__name__
+        o['updated_at'] = node.updated_at.strftime('%m/%d/%y %H:%M')
         return o
 
     def json_obj(self):

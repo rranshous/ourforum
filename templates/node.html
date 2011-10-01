@@ -40,7 +40,7 @@
 
     // wrap our node's html in something
     node_container_template = new Ext.Template([
-        '<div class="node {type} level_{level}">',
+        '<div type="{type}" id="{id}" class="node {type} level_{level}">',
             '<div onClick="handle_node_content_click(this);"',
             ' class="node_content">',
                 '{html}',
@@ -58,15 +58,19 @@
                 '<button class="focus" ',
                 'onClick="handle_focus_node(this);"',
                 '>Focus</button>',
+                // no reason for this to be a button other than style
+                '<button class="updated_at">{updated_at}</button>',
             '</div>',
         '</div>'
     ]).compile();
 
-    var node_container = function(type,level,html) {
+    var node_container = function(type,level,html,data) {
         // just wrap the html in a div w/ the node type
         if(Ext.isEmpty(type)) { type = 'none'; }
         var r = node_container_template.apply({type:type,
+                                               updated_at:data.updated_at || '',
                                                level:level,
+                                               id:data.id,
                                                html:html});
         return r;
     };
@@ -76,7 +80,7 @@
         var r = node_renderers[data['type']];
         if(Ext.isEmpty(r))
             r = node_renderers['DEFAULT'];
-        return node_container(data.type,level,r(data));
+        return node_container(data.type,level,r(data),data);
     }
 
     var T = function(type,renderers) {
@@ -87,7 +91,7 @@
             Ext.each(renderers,function(renderer) {
                 for(var k in data) {
                     if(!first && renderer.once) { return; }
-                    r = renderer(k,data[k]);
+                    r = renderer(k,data[k],data);
                     if(!Ext.isEmpty(r) && r) {
                         to_return += r;
                         if(!renderer.no_break) {
@@ -102,10 +106,10 @@
     };
 
     var get_renderer = function(name,modifiers) {
-        return (function(k,v) {
+        return (function(k,v,data) {
             if(name==k) {
                 Ext.each(modifiers,function(m) {
-                    v = m(v);
+                    v = m(v,data);
                 },this);
                 return v;
             }
@@ -169,6 +173,9 @@
     };
     var markdown = function(s) {
         return showdown_converter.makeHtml(s);
+    };
+    var updated_at = function(s,data) {
+        return s+'<span class="updated_at">'+data.updated_at+'</span>';
     };
 
     // our data
@@ -288,28 +295,58 @@
     // update a node
     max_level = 0;
     var update_node = function(el,data,level) {
+
         // each recusive loop this will be reset
         // by the end we'll know the max level
         max_level = level || 0;
         var html = render(data,level);
-        var node_el = Ext.get(Ext.DomHelper.append(el,html,true));
-        // do this so a get can access the dtaa
-        node_el.id = data.id;
-        node_el.type = data.type;
-        // if the node's content is not scrollable add the no_summary class
-        // or if the type is comment
-        if(!node_el.child('.node_content').isScrollable() ||
-           node_el.type == 'Comment') {
-            handle_unsumarize(node_el.child('.unsumarize'));
-        };
+        var relatives_html = [];
+
+        // get the HTML for his relatives
+        var relative_html = '';
         // render in the relatives
         Ext.each(get_relatives(data), function(r) {
-            update_node(node_el,r,level+1);
+            // we want to append this node's html to the end of ours
+            relatives_html.push(update_node(el,r,level+1));
         });
-        // update w/ our next max level
-        if(level == 0) {
-            update_level_filter_buttons();
-        }
+
+        // now that we have our nodes data and our relatives, append
+        // into our node's html
+        c = '';
+        i = html.length - 1;
+        while(c != '/') {
+            i -= 1;
+            c = html[i];
+        };
+        // we found the slash, get the bracket
+        i -= 1;
+
+        // concat our relatives html
+        var rel_html = relatives_html.join(' ');
+        html = html.substr(0,i) + rel_html + html.substr(i);
+
+        // we aren't root, return our html
+        if(level != 0) {
+            return html;
+        };
+
+        // we're root node, actually render
+        el.update(html);
+
+        // go through all the nodes under where we just rendered
+        Ext.each(Ext.query('.node',el),function(node_el) {
+            node_el = Ext.get(node_el);
+            // set the id and type on the el
+            node.id = node.getAttribute('id');
+            node.type = node.getAttribute('type');
+
+            // if the node's content is not scrollable add the no_summary class
+            // or if the type is comment
+            if(!node_el.child('.node_content').isScrollable() ||
+               node_el.type == 'Comment') {
+                handle_unsumarize(node_el.child('.unsumarize'));
+            };
+        });
     };
 
 
@@ -427,8 +464,9 @@
 
         // the root of data is going to be the node's data
         // use that data to update our main node div
-        MAIN_EL().update('');
-        update_node(MAIN_EL(),data,0);
+        var el = MAIN_EL();
+        el.update('');
+        update_node(el,data,0);
     };
 
     var handle_activate_response = function(response) {
@@ -807,6 +845,7 @@
         }
         .node > .action_buttons {
             color: gray;
+
         }
         .node > .action_buttons > button {
             background: transparent;
@@ -894,10 +933,10 @@
             display: none;
             cursor: pointer;
         }
-        .node.level_0.FeedEntry .unsumarize,
-        .node.level_0.Comment  .unsumarize,
-        .node.none.level_0 .node.level_1.FeedEntry .unsumarize,
-        .node.none.level_0 .node.level_1.Comment .unsumarize {
+        .node.level_0.FeedEntry > .unsumarize,
+        .node.level_0.Comment > .unsumarize,
+        .node.none.level_0 .node.level_1.FeedEntry > .unsumarize,
+        .node.none.level_0 .node.level_1.Comment > .unsumarize {
             display: block;
             color: blue;
             text-decoration: underline;
