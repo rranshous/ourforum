@@ -241,7 +241,7 @@ class Node(BaseController):
                                       m.Node.id.desc())
 
         # limit to our count
-        query = query.limit(count)
+        query = query.limit(count * 2)
 
         # the front page should not have authors or users
         # TODO: in query
@@ -269,7 +269,7 @@ class Node(BaseController):
                 seen += rels
 
         # pull the id's off the returned tuple
-        ids = [i.id for i in nodes]
+        ids = [i.id for i in nodes][:int(count)]
 
         return dumps(self.get_data(ids,depth,show_repeats=True))
 

@@ -18,6 +18,10 @@
 
     <!-- <script src="https://ajax.googleapis.com/ajax/libs/ext-core/3.1.0/ext-core-debug.js"></script> -->
     <script src="/js/ext-core-debug.js"/></script>
+    <script src="/js/showdown.js"/></script>
+    <script>
+        showdown_converter = new Showdown.converter();
+    </script>
 
     <script>
 
@@ -37,7 +41,7 @@
     // wrap our node's html in something
     node_container_template = new Ext.Template([
         '<div class="node {type} level_{level}">',
-            '<div onClick="handle_node_content_click(this); return false;"',
+            '<div onClick="handle_node_content_click(this);"',
             ' class="node_content">',
                 '{html}',
             '</div>',
@@ -52,7 +56,7 @@
                 'onClick="handle_save_node(Ext.get(this))"',
                 '>Save Down</button>',
                 '<button class="focus" ',
-                'onClick="handle_focus_node(this);return false;"',
+                'onClick="handle_focus_node(this);"',
                 '>Focus</button>',
             '</div>',
         '</div>'
@@ -163,6 +167,9 @@
             return r;
         })
     };
+    var markdown = function(s) {
+        return showdown_converter.makeHtml(s);
+    };
 
     // our data
     T('FeedEntry',[
@@ -173,7 +180,7 @@
 
     T('Comment',[
         F('title',bold),
-        F('comment',make_readable)
+        F('comment',markdown)
     ]);
 
     T('User',[
@@ -805,7 +812,7 @@
             background: transparent;
             border: none;
             padding: 0;
-            margin: 0;
+            margin: 0 2px;
             cursor: pointer;
             color: gray;
         }
