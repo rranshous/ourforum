@@ -72,14 +72,12 @@ class Node(BaseController):
         """ return back the json for the nodes,
             and their relative's possibly """
 
-        to_return = {}
-
         # make sure depth is an int
         depth = int(depth)
 
         # we can pass multiple nodes for the root lvl
         if not node_ids:
-            return dumps({})
+            return dumps([])
 
         # we'll take a string, if we have to
         if isinstance(node_ids,basestring):
@@ -124,8 +122,6 @@ class Node(BaseController):
                     author = node.get_author()
                     if author:
                         o['_relatives'] = [author.json_obj()]
-                    else:
-                        cherrypy.log('No Author!: %s' % node.id)
 
             return lvl
 
@@ -364,16 +360,18 @@ class Node(BaseController):
             if k.lower() == 'type':
                 cls = getattr(m,v)
                 if cls:
-                    found += cls.query.all()
-            found += m.JsonNode.get_bys(k=v)
+                    found += cls.query. \
+                                 order_by(cls.id.desc()).all()
+            else:
+                found += m.JsonNode.get_bys(k=v)
         else:
             log.debug('general search')
             # general search
-            found += m.Node.query.filter(m.JsonNode.data.like('%'+s+'%')).all()
+            found += m.Node.query.filter(m.JsonNode.data.like('%'+s+'%')). \
+                     order_by(m.JsonNode.updated_at.desc(),
+                              m.JsonNode.id.desc()).all()
 
-        cherrypy.log('found: %s' % found)
-
-        return self.list([x.id for x in set(found)])
+        return self.list([x.id for x in found])
 
 
     @cherrypy.expose

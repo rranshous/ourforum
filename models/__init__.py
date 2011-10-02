@@ -87,6 +87,9 @@ class Node(BaseEntity):
     # for sorting we want to know when a relation updated last
     relative_updated_at = Field(DATETIME)
 
+    # have we been saved down
+    saved_down = JsonAttribute(False)
+
     @classmethod
     def _get_relatives(cls,node,depth=1,d=0):
         if d >= depth:
@@ -128,6 +131,8 @@ class Node(BaseEntity):
         # write it to disk
         with codec.open(save_path,'w') as fh:
             fh.write(out)
+
+        self.saved_down = True
 
         return save_path
 
@@ -177,7 +182,7 @@ class JsonNode(Node):
         over ride to provide compatibility,
         shitty list look through
         """
-        for o in cls.query.all():
+        for o in cls.query.order_by(cls.updated_at.desc(),cls.id.desc()).all():
             count = 0
             for k,v in kwargs.iteritems():
                 o_v = getattr(o,k)
@@ -196,7 +201,7 @@ class JsonNode(Node):
         # we are going to search the json data for substrings
         subs = []
         filters = []
-        query = cls.query
+        query = cls.query.order_by(cls.updated_at.desc(),cls.id.desc())
         for k,v in kwargs.iteritems():
             s = dumps({k:v})[2:-2]
             # they want a like
@@ -343,6 +348,7 @@ class FeedEntry(JsonNode):
         print 'saving: %s' % path
         with open(path,'w') as fh:
             fh.write(html)
+        self.saved_down = True
         return path
 
     def get_save_path(self):
@@ -372,6 +378,7 @@ class Comment(JsonNode):
         print 'saving: %s' % path
         with open(path,'w') as fh:
             fh.write(html)
+        self.saved_down = True
         return path
 
     def get_save_path(self):
@@ -471,6 +478,8 @@ class SexyLady(JsonNode):
         # write it to disk
         with open(save_path,'w') as fh:
             fh.write(urlopen(self.img_url).read())
+
+        self.saved_down = True
 
         return save_path
 
