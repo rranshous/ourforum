@@ -172,7 +172,10 @@
         })
     };
     var markdown = function(s) {
-        return showdown_converter.makeHtml(s);
+        var html = showdown_converter.makeHtml(s);
+        // remove the trailing br
+        html = html.substr(0,html.length-4);
+        return html;
     };
     var updated_at = function(s,data) {
         return s+'<span class="updated_at">'+data.updated_at+'</span>';
@@ -841,7 +844,12 @@
 
         }
         .node.Comment {
-
+        
+        }
+        ## to handle markdown
+        .node.Comment > .node_content > p {
+            margin: 0;
+            padding: 0;
         }
         .node > .action_buttons {
             color: gray;

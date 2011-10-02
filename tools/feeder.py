@@ -144,6 +144,8 @@ class ImageFeeder(Feeder):
 
     def create_node(self, entry):
 
+        print 'creating entry for: %s' % entry.get('guid')
+
         # pull the body and pull any images
         soup = BS(entry.get('description',
                   entry.get('content',
