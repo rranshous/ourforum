@@ -141,6 +141,8 @@ def node_most_recent_relative_update(node_datas):
                 newest = f
         return newest
     newest = c(node_datas)
+    if not newest:
+        return 0
     return -newest
 
 @decorator

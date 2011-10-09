@@ -587,6 +587,8 @@
         var name, type, form_html = [];
         for(name in fields) {
             type = fields[name];
+            // if we dont have a template dont render
+            if(Ext.isEmpty(FIELD_TEMPLATE[type])) { continue; }
             console.log({'type':type,'name':name});
             var value = data[name];
             if(type=='str') { value = escape(value); }
@@ -900,14 +902,16 @@
 
 <body>
     <div id="navigation_options">
-        <button onClick="show_recent();">
-            Most Recent
-        </button>
         <input id="search_box" type="text"/>
         <button type="submit" onClick="search(Ext.get('search_box').dom.value);">
             Search 
         </button>
-        <span style="font-size: 10px; color: grey;">ex: handle:robby ex: type:SexyLady</span>
+        <span style="font-size: 10px; color: grey;">ex: handle:robby
+                                                    ex: type:SexyLady</span>
+        <hr/>
+        <button onClick="show_recent();">
+            Front Page
+        </button>
     </div>
     <hr/>
     <div id="node_action_container">
