@@ -3,12 +3,14 @@ from helpers import render, redirect
 from json import dumps
 from lib.base import *
 from nodes import Node
+from views import View
 from auth import public, logout_user, login_user
 
 class Root(BaseController):
     """ sits @ The root of the app """
 
     node = Node()
+    view = View()
 
     @cherrypy.expose
     def default(self,*args,**kwargs):

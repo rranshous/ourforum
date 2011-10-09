@@ -1,144 +1,27 @@
 import cherrypy
 import random
-from helpers import render, redirect
+from helpers import (render, redirect, get_node_data, memcache_cache,
+                     node_most_recent_relative_update)
 from json import dumps, loads
 from lib.base import *
 from inspect import isclass
 from decorator import decorator
-from lib.memcache import default_client as memcache_client
-from sqlalchemy import event
 import zlib
 
-# we want to make sure and listen on commits, if a commit
-# happens we need to increment the memcache key counter
-def increment_memcache_counter(*args,**kwargs):
-    cherrypy.log('incrementing memcache')
-    memcache_client.incr("key_counter")
-
-# add the listener
-event.listen(m.session, "after_commit", increment_memcache_counter)
-# make sure the counter exists
-r = memcache_client.get('key_counter')
-if not r:
-    memcache_client.set('key_counter',0)
-else:
-    memcache_client.incr('key_counter')
-
-def node_most_recent_relative_update(node_datas):
-    # go down through the relatives, find the newest one
-    def c(nds):
-        newest = nds.get('epoch_updated_at')
-        for node_data in nds.get('_relatives',[]):
-            f = c(node_data)
-            if f > newest:
-                newest = f
-        return newest
-    newest = c(node_datas)
-    return -newest
-
-@decorator
-def memcache(f, *args, **kwargs):
-    # check if this set of args / kwargs / f is in memcache
-    c = memcache_client.get('key_counter') or 0
-
-    # create our key using function name and args
-    key = '%s_%s_%s_%s' % (c,f.__name__,
-                           '_'.join([str(x) for x in args
-                                     if isinstance(x,(basestring,unicode))]),
-                           '_'.join(['%s.%s' % (x,kwargs[x])
-                                     for x in sorted(kwargs.keys())]))
-
-    # fingers crossed
-    cherrypy.log('memcache key: %s' % key)
-    r = memcache_client.get(key)
-    # miss =/
-    if not r:
-        r = f(*args,**kwargs)
-        # update memcache
-        cr = zlib.compress(r)
-        cherrypy.log('writing compressed to memcache %s:%s'
-                     % (len(r),len(cr)))
-        memcache_client.set(key,cr)
-    else:
-        r = zlib.decompress(r)
-        cherrypy.log('memcache hit')
-
-    return r
 
 class Node(BaseController):
     """ server / edit / create nodes """
 
-    def get_data(self,node_ids,depth=1,show_repeats=False):
-        """ return back the json for the nodes,
-            and their relative's possibly """
-
-        # make sure depth is an int
-        depth = int(depth)
-
-        # we can pass multiple nodes for the root lvl
-        if not node_ids:
-            return dumps([])
-
-        # we'll take a string, if we have to
-        if isinstance(node_ids,basestring):
-            node_ids = map(int,node_ids.split(','))
-
-        print 'node_ids: %s' % node_ids
-        print 'depth: %s' % depth
-
-        # for every lvl of depth we want
-        # to return all the relating nodes
-        # this could be alot quickly
-
-        # recursion, recursion, recursion
-        def _lvl(nodes,root_nodes,current_depth,depth,previous_nodes=[]):
-            lvl = []
-
-            # nothing to see here
-            if not nodes:
-                return lvl
-
-            for node in nodes:
-                o = node.json_obj()
-                lvl.append(o)
-                relatives = node.relatives
-                # don't wanna go a > b > a
-                relatives = [r for r in relatives
-                             if not r in previous_nodes or isinstance(r,m.Author)]
-                if current_depth < depth and not isinstance(node,m.Author):
-                    # if we are not skipping we filter out nodes from the root
-                    # except users of course
-                    if not show_repeats:
-                        relatives = [x for x in node.relatives
-                                     if x not in root_nodes or
-                                     isinstance(x,m.Author)]
-                    if relatives:
-                        o['_relatives'] = _lvl(relatives,root_nodes,
-                                               current_depth+1,depth,
-                                               nodes)
-
-                # if this isn't a user node, fill in it's author
-                elif not isinstance(node,m.Author):
-                    author = node.get_author()
-                    if author:
-                        o['_relatives'] = [author.json_obj()]
-
-            return lvl
-
-        nodes = [m.Node.get(n) for n in node_ids]
-        to_return = _lvl(nodes,nodes,1,depth)
-
-        return to_return
 
     @cherrypy.expose
-    @memcache
+    @memcache_cache
     def list(self,node_ids,depth=1):
-        return dumps(self.get_data(node_ids,depth))
+        return dumps(get_node_data(node_ids,depth))
 
     @cherrypy.expose
-    @memcache
+    @memcache_cache
     def get(self,node_id,depth=1):
-        return dumps(self.get_data(node_id,depth)[0])
+        return dumps(get_node_data(node_id,depth)[0])
 
     def _modify_relative(self,node,relative,m_add=False,m_remove=False):
         print 'modifying relative: %s' % relative.id
@@ -201,7 +84,7 @@ class Node(BaseController):
         m.session.commit()
 
         # return the up to date representation
-        return dumps(self.get_data([node.id]))
+        return dumps(get_node_data([node.id]))
 
     @cherrypy.expose
     def create(self,**kwargs):
@@ -233,63 +116,13 @@ class Node(BaseController):
         m.session.commit()
 
         # return it's data
-        return dumps(self.get_data([node.id])[0])
+        return dumps(get_node_data([node.id])[0])
 
 
     ## helper methods !
 
     @cherrypy.expose
-    @memcache
-    def recent(self,count=10,depth=1):
-        # order the nodes so that the most recently updated ones are first
-        # followed by those who most recently had a relative updated
-        query = m.Node.query.order_by(m.Node.updated_at.desc(),
-                                      m.Node.relative_updated_at.desc(),
-                                      m.Node.id.desc())
-
-        # limit to our count
-        query = query.limit(count * 2)
-
-        # the front page should not have authors or users
-        # TODO: in query
-        nodes = query.all()
-        filter_types = (m.User,m.Author,m.SexyLady)
-        nodes = [n for n in nodes if not isinstance(n,filter_types)]
-        # make sure depth is a #
-        depth = int(depth)
-
-        # we want to order these such that the newest nodes appear first
-        # but if a node relative (comment) was added to a name
-        # than we want to show the node the comment was added to
-        # but not the comment itself @ root (make sense?)
-
-        # reverse to work backwards
-        rev_nodes = nodes[::-1]
-        seen = []
-        for node in rev_nodes:
-            # since we are working backwards, any node which
-            # was already a relative that we've seen should be skipped
-            if node in seen:
-                nodes.remove(node)
-            else:
-                rels = node.get_relatives(depth)
-                seen += rels
-
-        # pull the id's off the returned tuple
-        ids = [i.id for i in nodes][:int(count)]
-
-        # get dicts of data
-        data = self.get_data(ids,depth,show_repeats=True)
-
-        # sort the data by most recently updated relative
-        # I know this is attrocious. should be doing this
-        # in sql
-        data.sort(key=node_most_recent_relative_update)
-
-        return dumps(data)
-
-    @cherrypy.expose
-    @memcache
+    @memcache_cache
     def describe(self,node_type=None,id=None):
         # return back a description of the nodes
         # type's fields
@@ -325,7 +158,7 @@ class Node(BaseController):
 
 
     @cherrypy.expose
-    @memcache
+    @memcache_cache
     def get_types(self):
         """ returns possible node types """
         types = []
@@ -341,37 +174,6 @@ class Node(BaseController):
                 types.append(a.__name__)
 
         return dumps(types)
-
-
-    @cherrypy.expose
-    @memcache
-    def search(self,s):
-        """ search for a node """
-
-        # keepin it simple for now
-        found = []
-
-        cherrypy.log('search: %s' % s)
-
-        # one keyword one value
-        if ':' in s:
-            cherrypy.log('k/v search')
-            k,v = s.split(':')
-            if k.lower() == 'type':
-                cls = getattr(m,v)
-                if cls:
-                    found += cls.query. \
-                                 order_by(cls.id.desc()).all()
-            else:
-                found += m.JsonNode.get_bys(k=v)
-        else:
-            log.debug('general search')
-            # general search
-            found += m.Node.query.filter(m.JsonNode.data.like('%'+s+'%')). \
-                     order_by(m.JsonNode.updated_at.desc(),
-                              m.JsonNode.id.desc()).all()
-
-        return self.list([x.id for x in found])
 
 
     @cherrypy.expose

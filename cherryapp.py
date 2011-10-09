@@ -48,7 +48,8 @@ if __name__ == "__main__":
         cherrypy.config.update(config)
 
         # create our app from root
-        app = cherrypy.Application(c.Root(),config=config)
+        cherrypy.root = c.Root()
+        app = cherrypy.Application(cherrypy.root,config=config)
 
         # TODO: not hardcode
         server = wsgiserver.CherryPyWSGIServer(('0.0.0.0', 443), app)
@@ -71,7 +72,8 @@ if __name__ == "__main__":
     else:
         config = './cherryconfig.ini'
         # create our app from root
-        app = cherrypy.Application(c.Root(),config=config)
+        cherrypy.root = c.Root()
+        app = cherrypy.Application(cherrypy.root,config=config)
         cherrypy.quickstart(app,config=config)
 
 

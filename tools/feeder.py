@@ -122,7 +122,7 @@ class Feeder:
             with file('./seen.json','r') as fh:
                 self.seen = loads(fh.read())
         except:
-            pass
+            print 'COULD NOT FIND SEEN'
 
     def _write_seen(self):
         from json import dumps
@@ -164,9 +164,11 @@ class ImageFeeder(Feeder):
     def has_seen(self,entry):
         """ return True if we've already
             processed the node """
-        return entry.get('guid','UNKNOWN') in self.seen
+        u = str(entry.get('guid','UNKNOWN'))
+        return u in self.seen
 
     def mark_seen(self,entry):
         """ update our seen list """
-        self.seen.append(entry.get('guid','UNKNOWN'))
+        u = str(entry.get('guid','UNKNOWN'))
+        self.seen.append(u)
 

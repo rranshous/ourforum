@@ -353,89 +353,6 @@
     };
 
 
-    // this is a map of f[lvl][type] = css_node
-    level_filters = {};
-    var handle_lvl_filter_button = function() {
-        // they want to update the lvl filters!
-        
-        // first check if the lvl exists
-        if(Ext.isEmpty(level_filters[this.level])) {
-            level_filters[this.level] = {};
-        };
-        
-        // now see if there is an entry for this filter
-        if(Ext.isEmpty(level_filters[this.level][this.type])) {
-            // we need to add the filter
-            console.log({level:this.level,type:this.type});
-            var el = Ext.DomHelper.append(Ext.getBody(),{
-                tag: 'style',
-                html: '.node.'+this.type+'.level_'+this.level+' { display: none; }'
-            },this);
-            // add the new filter style to the lookup
-            level_filters[this.level][this.type] = el;
-            this.removeClass('enabled');
-        } else {
-            // the filter exists, remove it
-            level_filters[this.level][this.type].remove()
-            level_filters[this.level][this.type] = undefined;
-            this.addClass('enabled');
-        };
-
-    };
-
-
-    // we want to build a multi lvl filter
-    // there will be N columns w/ one row per type
-    // selecting a type in the first column will filter
-    // the first lvl of relative nodes to only the selected
-    // type. selecting the second column filters the second
-    var update_level_filter_buttons = function() {
-
-        // don't think we need this right now
-        return;
-
-        // first we get the types of nodes
-        get_node_types(function(types) {
-            // now that we know all the types, create one 
-            // column for each depth lvl currently showing
-            // to do this we are going to put down divs for each
-            // column to max depth
-            
-            // grab our container
-            var c = Ext.get('lvl_filter_button_container');
-
-            // clear out the old buttons
-            c.update('');
-
-            // now once for each level add the divs
-            for(var i=1; i<=max_level; i++) {
-                var el = Ext.DomHelper.append(c, {
-                    tag: 'div',
-                    cls: 'lvl_filters_'+i
-                },true);
-                // add the buttons
-                Ext.each(types, function(_type) {
-                    // should our button be enabled ?
-                    var enabled = true;
-                    if(!Ext.isEmpty(level_filters[i]) &&
-                       !Ext.isEmpty(level_filters[i][_type])) {
-                        enabled = false;
-                    }
-                    // add our button
-                    var button = Ext.DomHelper.append(el,{
-                        tag: 'button',
-                        html: _type,
-                        cls: enabled?'enabled':''
-                    },true);
-                    button.level = i;
-                    button.type = _type;
-                    // callback to handle the action, scoped to the button
-                    button.on('click',handle_lvl_filter_button,button);
-                });
-            }
-        });
-    };
-
     var get_relatives = function(data) {
         return data._relatives;
     };
@@ -455,7 +372,7 @@
         if(data && data.id) {
             load_node_data(data.id);
         } else {
-            //load_front_page();
+            //show_recent();
         }
     };
 
@@ -483,19 +400,20 @@
         _handle_activate_response(data);
     };
 
-    var load_front_page = function(count) {
-        var front_page_count = count || 100;
+    var show_recent = function(type,count) {
+        count = count || 100;
         var depth = 4;
         console.log('loading front page');
         Ext.Ajax.request({
-            url:'/node/recent/'+front_page_count+'/'+depth,
+            params: { count: count, depth: depth, node_type: type },
+            url:'/view/recent/',
             success: handle_activate_multi_response
         });
     };
 
     var search = function(s) {
         Ext.Ajax.request({
-            url:'/node/search/',
+            url:'/view/search/',
             params: { s:s },
             success: handle_activate_multi_response
         });
@@ -542,7 +460,7 @@
         // if not, default load
         else {
             console.log('loading front page');
-            load_front_page();
+            show_recent();
         }
     };
 
@@ -598,7 +516,7 @@
     var refresh_page_data = function(form) {
         if(Ext.isEmpty(last_data.id)) {
             console.log('refresh page data front page');
-            load_front_page();
+            show_recent();
         } else {
             console.log('activating last node');
             activate_node(last_data.id);
@@ -788,12 +706,27 @@
         },this);
     };
 
+    // for each type of node we are going to create a button
+    // which shows the most recent view for that node
+    var update_recent_buttons = function() {
+        get_node_types(function(types) {
+            var c = Ext.get('navigation_options');
+            Ext.each(types, function(t) {
+                Ext.DomHelper.append(c,{
+                    tag:'button',
+                    html:'Recent '+t
+                },true).on('click',show_recent.createCallback(t));
+            });
+        });
+    };
+
 
     // ladies and gentlemen start your engines!
     var init = function() {
         Ext.Ajax.disableCaching = false;
         handle_page_load();
         update_new_node_buttons();
+        update_recent_buttons()
     };
     Ext.onReady(init());
 
@@ -967,7 +900,7 @@
 
 <body>
     <div id="navigation_options">
-        <button onClick="load_front_page();">
+        <button onClick="show_recent();">
             Most Recent
         </button>
         <input id="search_box" type="text"/>
@@ -987,11 +920,6 @@
     <div id="form_container">
     </div>
     <hr/>
-    <!--
-    <div id="lvl_filter_button_container">
-    </div>
-    <hr/>
-    -->
     <div id="main_el">
     </div>
 </body>
