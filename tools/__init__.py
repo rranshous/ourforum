@@ -1,1 +1,1 @@
-from feeder import Feeder, ImageFeeder
+from feeder import Feeder, ImageFeeder, GFeeder

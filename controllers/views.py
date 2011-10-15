@@ -39,7 +39,7 @@ class View(BaseController):
                 else:
                     found += m.JsonNode.get_bys(k=v)
         else:
-            log.debug('general search')
+            cherrypy.log('general search')
             # general search
             found += m.Node.query.filter(m.JsonNode.data.like('%'+s+'%')). \
                      order_by(m.JsonNode.updated_at.desc(),

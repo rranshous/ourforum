@@ -70,6 +70,10 @@ class Feeder:
             # since we haven't seen it we should
             # add it
             node = self.create_node(entry)
+            if not node:
+                print 'no node, skipping'
+                continue
+
             if isinstance(node,(list,tuple)):
                 nodes += node
             else:
@@ -95,7 +99,7 @@ class Feeder:
         }
         value_modifiers = {
             'updated_parsed': lambda v: time.asctime(v),
-            'content': lambda v: v[0].get('value')
+            'content': lambda v: v[0].value
         }
         # now we try and create our node
         # go through the attribute lookup
@@ -129,15 +133,76 @@ class Feeder:
         with file('./seen.json','w') as fh:
             fh.write(dumps(self.seen))
 
+    def _get_id(self,entry):
+        _id = entry.get('id')
+        if isinstance(_id,dict):
+            _id = _id.get('original-id')
+        if not _id:
+            if 'content' in entry:
+                _id = str(hash(entry.get('content')[0].value))
+            elif 'summary' in entry:
+                _id = str(hash(entry.get('summary')))
+            else:
+                _id = str(hash(str(entry)))
+
+        return str(_id)
+
     def has_seen(self,entry):
         """ return True if we've already
             processed the node """
-        return entry.get('id',entry.get('guid','UNKNOWN')) in self.seen
+        return self._get_id(entry) in self.seen
 
     def mark_seen(self,entry):
         """ update our seen list """
-        self.seen.append(entry.get('id',entry.get('guid','UNKNOWN')))
+        self.seen.append(self._get_id(entry))
 
+class GFeeder(Feeder):
+    """ make sure @nodedrop is mentioned """
+
+    def create_node(self,entry):
+        """ takes an entry and creates a
+            FeedEntry node """
+
+        attr_lookup = {
+            'source':('link',),
+            'body':('content','summary'),
+            'title':('title',),
+            'timestamp':('updated_parsed','updated')
+        }
+        value_modifiers = {
+            'updated_parsed': lambda v: time.asctime(v),
+            'content': lambda v: v[0].value
+        }
+
+        # filter for @nodedrop
+        if 'content' in entry:
+            c = entry.get('content')[0].value
+        else:
+            c = entry.get('summary')
+
+        c = c.lower()
+
+        if '@nodedrop' not in c:
+            return None
+        else:
+            print 'FOUND @NODEDROP REF'
+
+        # now we try and create our node
+        # go through the attribute lookup
+        # trying to fill in params
+        node = m.FeedEntry()
+        for k, attrs in attr_lookup.iteritems():
+            for attr in attrs:
+                if entry.get(attr):
+                    v = entry.get(attr)
+                    if attr in value_modifiers:
+                        v = value_modifiers.get(attr)(v)
+                        print 'len v: %s' % len(v)
+                    setattr(node,k,v)
+                    break
+
+
+        return node
 
 
 class ImageFeeder(Feeder):
@@ -151,24 +216,34 @@ class ImageFeeder(Feeder):
                   entry.get('content',
                   entry.get('summary'))))
         nodes = []
-        for img in soup.findAll('img'):
-            url = img.get('src')
-            source = img.get('link')
+        for url in self._get_img_urls(entry):
             print 'adding node for: %s' % url
-            node = m.SexyLady(img_url=url,
-                              source_href=source)
+            node = m.SexyLady(img_url=url)
             nodes.append(node)
 
         return nodes
 
+    def _get_img_urls(self, entry):
+        # pull the body and pull any images
+        soup = BS(entry.get('description',
+                  entry.get('content',
+                  entry.get('summary'))))
+        urls = []
+        for img in soup.findAll('img'):
+            urls.append(img.get('src'))
+        return urls
+
+    def _id_from_images(self,entry):
+        return hash(''.join(self._get_img_urls(entry)))
+
     def has_seen(self,entry):
         """ return True if we've already
             processed the node """
-        u = str(entry.get('guid','UNKNOWN'))
+        u = self._id_from_images(entry)
         return u in self.seen
 
     def mark_seen(self,entry):
         """ update our seen list """
-        u = str(entry.get('guid','UNKNOWN'))
+        u = self._id_from_images(entry)
         self.seen.append(u)
 
