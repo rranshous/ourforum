@@ -2,14 +2,20 @@
 
 # we are going to feed on some motha f'n feeds!
 #!/usr/bin/python
-
+import sys
+from time import sleep
 from lib.memcache import default_client as memcache_client
 import models as m; m.setup()
 
 # who will be feasting tonight ?
 from tools import GFeeder as THEMONSTER
 
-if __name__ == '__main__':
+SLEEP_TIME = 30
+
+def run(the_monster=None):
+
+    if not the_monster:
+        the_monster = THEMONSTER(None)
 
     # go through the users, devouring, drooling
     # slashing, consuming
@@ -29,10 +35,10 @@ if __name__ == '__main__':
             print 'let the feast begin! %s' % url
 
             # get ready
-            feast = THEMONSTER(url)
+            the_monster.url = url
 
             # FEAST
-            remains = feast.pull() # (nom nom nom)
+            remains = the_monster.pull() # (nom nom nom)
 
             # on whom did we we feast?
             for mangled_mess in remains:
@@ -53,3 +59,12 @@ if __name__ == '__main__':
 
     m.session.commit()
     memcache_client.incr('key_counter')
+
+if __name__ == '__main__':
+    continuous = True
+    the_monster = THEMONSTER(None)
+    while continuous:
+        run(the_monster)
+        continuous = 'continuous' in sys.argv
+        if continuous:
+            sleep(SLEEP_TIME)
